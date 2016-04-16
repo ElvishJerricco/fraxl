@@ -77,7 +77,13 @@ or call a computation without guaranteeing its data source is available.
 The data source layer can be easily modified.
 Caching is a substitution of this layer that replaces the data
 source with one that caches the results of the original.
-It does this with a dependent map.
+It does this with a dependent map, whose keys are requests,
+and whose values are `MVars` of the results.
+If an uncached request is requested,
+an empty `MVar` is inserted into the cache map, the original `fetch` is called,
+and the result is stored in the `MVar`.
+If a cached request is requested,
+the wait-action returned will simply be `readMVar`.
 
 ---
 
