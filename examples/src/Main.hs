@@ -11,9 +11,7 @@ import           Control.Concurrent
 import           Control.Fraxl
 import           Control.Fraxl.Class
 import           Control.Monad.IO.Class
-import qualified Data.Dependent.Map     as DMap
 import           Data.GADT.Compare
-import           Data.Proxy
 
 main :: IO ()
 main = do
@@ -26,8 +24,6 @@ main = do
 myFraxl :: (MonadFraxl MySource m, MonadFraxl MySource2 m) => m [String]
 myFraxl = replicate <$> dataFetch MyInt2 <*> dataFetch MyString
 
-type MySourceP = Proxy MySource
-mySourceP = Proxy :: MySourceP
 data MySource a where
   MyString :: MySource String
   MyInt :: MySource Int
@@ -55,8 +51,6 @@ instance MonadIO m => DataSource MySource m where
       threadDelay 1000000
       return 10
 
-type MySource2P = Proxy MySource2
-mySource2P = Proxy :: MySource2P
 data MySource2 a where
   MyString2 :: MySource2 String
   MyInt2 :: MySource2 Int
