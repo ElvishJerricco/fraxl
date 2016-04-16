@@ -11,13 +11,15 @@ import           Control.Concurrent
 import           Control.Fraxl
 import           Control.Fraxl.Class
 import           Control.Monad.IO.Class
+import           Control.Monad.State
 import           Data.GADT.Compare
 
 main :: IO ()
 main = do
-  let fraxl :: Fraxl '[MySource, MySource2] IO [String]
+  let fraxl :: Fraxl '[MySource, MySource2] (StateT Int IO) [String]
       fraxl = (++) <$> myFraxl <*> myFraxl
-  strs <- evalCachedFraxl fraxl
+  (strs, reqs) <- runStateT (evalCachedFraxl fraxl) 0
+  putStrLn ("Number of MySource2 requests made: " ++ show reqs)
   print $ length strs
   print strs
 
@@ -66,8 +68,8 @@ instance GCompare MySource2 where
   MyInt2 `gcompare` MyString2 = GGT
   MyInt2 `gcompare` MyInt2 = GEQ
 
-instance MonadIO m => DataSource MySource2 m where
-  fetch = simpleAsyncFetch simpleFetch where
+instance (MonadIO m, MonadState Int m) => DataSource MySource2 m where
+  fetch a = modify (+ 1) >> simpleAsyncFetch simpleFetch a where
     simpleFetch :: MySource2 a -> IO a
     simpleFetch MyString2 = do
       putStrLn "Sleeping String2!"
