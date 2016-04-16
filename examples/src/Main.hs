@@ -24,7 +24,7 @@ main = do
   print strs
 
 myFraxl :: (MonadFraxl MySource m, MonadFraxl MySource2 m) => m [String]
-myFraxl = replicate <$> dataFetch MyInt2 <*> dataFetch MyString
+myFraxl = replicate <$> myInt2 <*> myString
 
 data MySource a where
   MyString :: MySource String
@@ -53,6 +53,12 @@ instance MonadIO m => DataSource MySource m where
       threadDelay 1000000
       return 10
 
+myString :: MonadFraxl MySource m => m String
+myString = dataFetch MyString
+
+myInt :: MonadFraxl MySource m => m Int
+myInt = dataFetch MyInt
+
 data MySource2 a where
   MyString2 :: MySource2 String
   MyInt2 :: MySource2 Int
@@ -79,3 +85,9 @@ instance (MonadIO m, MonadState Int m) => DataSource MySource2 m where
       putStrLn "Sleeping Int2!"
       threadDelay 1000000
       return 10
+
+myString2 :: MonadFraxl MySource2 m => m String
+myString2 = dataFetch MyString2
+
+myInt2 :: MonadFraxl MySource2 m => m Int
+myInt2 = dataFetch MyInt2
