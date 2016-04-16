@@ -31,6 +31,8 @@ For one, a data source can choose what monad it lives in.
 Unlike Haxl, which only lets you live in `IO`,
 Fraxl is a monad transformer, allowing you to use arbitrary underlying monads.
 Thus, maintaining state between fetches can be left up to the data source.
+This can be used for several things,
+such as batching, caching, or session management.
 
 The `fetch` method takes a request and returns a way to wait on the result.
 That is, `fetch` should start a background thread,
