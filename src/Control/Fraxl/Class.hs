@@ -5,7 +5,6 @@ module Control.Fraxl.Class where
 
 import           Control.Applicative.Free
 import           Control.Fraxl
-import           Control.Monad
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Cont
 import           Control.Monad.Trans.Except
@@ -27,6 +26,9 @@ class Monad m => MonadFraxl f m where
 
 instance (DataSource f m, Member f r) => MonadFraxl f (Fraxl r m) where
   dataFetch = liftF . liftAp . inj
+
+instance DataSource f m => MonadFraxl f (FreerT f m) where
+  dataFetch = liftF . liftAp
 
 instance MonadFraxl f m => MonadFraxl f (ContT r m) where
   dataFetch = lift . dataFetch
