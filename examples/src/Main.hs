@@ -8,8 +8,7 @@
 module Main where
 
 import           Control.Concurrent
-import           Control.Fraxl
-import           Control.Fraxl.Class
+import           Control.Monad.Fraxl
 import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Data.GADT.Compare

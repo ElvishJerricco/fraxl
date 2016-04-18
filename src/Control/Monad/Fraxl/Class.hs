@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Control.Fraxl.Class where
+module Control.Monad.Fraxl.Class where
 
 import           Control.Applicative.Free
-import           Control.Fraxl
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Cont
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Fraxl
 import           Control.Monad.Trans.Free.Ap
 import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.List

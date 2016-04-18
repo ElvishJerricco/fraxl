@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Control.Fraxl where
+module Control.Monad.Trans.Fraxl where
 
 import           Control.Applicative.Free
 import           Control.Arrow
