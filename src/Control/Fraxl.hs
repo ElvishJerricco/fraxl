@@ -68,10 +68,7 @@ runFraxl = iterT (run RNil (join . fmap snd)) where
 simpleAsyncFetch :: forall m f q. MonadIO m
                     => (forall x. f x -> IO x)
                     -> Fetch f m q
-simpleAsyncFetch fetchIO = sequenceR where
-  sequenceR :: Rec f q' -> m (Rec m q')
-  sequenceR RNil = pure RNil
-  sequenceR (f :& fs) = (:&) <$> u f <*> sequenceR fs
+simpleAsyncFetch fetchIO = rtraverse u where
   u :: f a -> m (m a)
   u f = do
     a <- liftIO $ async (fetchIO f)
