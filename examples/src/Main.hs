@@ -13,6 +13,7 @@ import           Control.Fraxl.Class
 import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Data.GADT.Compare
+import           Data.Vinyl
 
 main :: IO ()
 main = do
@@ -75,7 +76,10 @@ instance GCompare MySource2 where
   MyInt2 `gcompare` MyInt2 = GEQ
 
 instance (MonadIO m, MonadState Int m) => DataSource MySource2 m where
-  fetch a = modify (+ 1) >> simpleAsyncFetch simpleFetch a where
+  fetch a = modify (+ rlength a) >> simpleAsyncFetch simpleFetch a where
+    rlength :: Rec f r -> Int
+    rlength RNil = 0
+    rlength (_ :& rs) = 1 + rlength rs
     simpleFetch :: MySource2 a -> IO a
     simpleFetch MyString2 = do
       putStrLn "Sleeping String2!"

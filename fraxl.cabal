@@ -36,6 +36,7 @@ executable examples
                      , mtl
                      , dependent-sum
                      , dependent-map
+                     , vinyl
   hs-source-dirs:      examples/src
   ghc-options:         -Wall
   default-language:    Haskell2010
