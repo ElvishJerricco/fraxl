@@ -15,8 +15,9 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Control.Fraxl
-                     , Control.Fraxl.Class
+  exposed-modules:     Control.Monad.Fraxl
+                     , Control.Monad.Fraxl.Class
+                     , Control.Monad.Trans.Fraxl
   build-depends:       base >= 4.7 && < 5
                      , async
                      , free
