@@ -18,12 +18,11 @@ data MySource a where
   MyInt :: MySource Int
 
 class Monad m => DataSource f m
-  fetch :: f a -> m (m a)
+  fetch :: Rec f q -> m (Rec m q)
 
 instance MonadIO m => DataSource MySource m where
-  fetch a = do
-    asyncOp <- liftIO $ async $ downloadSource a
-    return (wait asyncOp)
+  fetch RNil = return RNil
+  fetch (f :& fs) = ((:&) . liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
 ```
 
 You'll notice a few things here.
@@ -31,12 +30,16 @@ For one, a data source can choose what monad it lives in.
 Unlike Haxl, which only lets you live in `IO`,
 Fraxl is a monad transformer, allowing you to use arbitrary underlying monads.
 Thus, maintaining state between fetches can be left up to the data source.
-This can be used for several things,
-such as batching, caching, or session management.
+This can be used for several things, such as caching or session management.
 
-The `fetch` method takes a request and returns a way to wait on the result.
-That is, `fetch` should start a background thread,
-and return a way for Fraxl to block until it completes.
+`Rec :: (k -> *) -> [k] -> *` is used as a heterogenous list.
+`Rec f [a, b, c, ...]` is essentially a list of `f` requests
+with types `a`, `b`, `c`, `...`.
+
+The `fetch` method takes a list of `f` requests,
+and for each request, returns an `m` action that waits on the response.
+That is, `fetch` should start background threads for requests,
+and return all the actions for Fraxl to block with until they complete.
 This way, Fraxl can have many requests start their work in parallel,
 and call all their wait-actions together.
 

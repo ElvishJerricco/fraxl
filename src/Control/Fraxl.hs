@@ -1,52 +1,69 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Control.Fraxl where
 
 import           Control.Applicative.Free
+import           Control.Arrow
 import           Control.Concurrent
 import           Control.Concurrent.Async
-import           Control.Monad
-import           Control.Monad.IO.Class
+import           Control.Monad.Cont
 import           Control.Monad.State
 import           Control.Monad.Trans.Free.Ap hiding (Pure)
 import           Data.Dependent.Map          (DMap)
 import qualified Data.Dependent.Map          as DMap
 import           Data.Dependent.OpenUnion
+import           Data.Vinyl
 
 type FreerT f = FreeT (Ap f)
 type Fraxl r = FreerT (Union r)
-type Fetch f m a = f a -> m (m a)
+type Fetch f m q = Rec f q -> m (Rec m q)
 
 class Monad m => DataSource f m where
-  fetch :: Fetch f m a
+  fetch :: Fetch f m q
 
 instance Monad m => DataSource (Union '[]) m where
-  fetch _ = error "Not possible - empty union"
+  fetch RNil = return RNil
+  fetch (_ :& _) = error "Not possible - empty union"
 
 instance ( DataSource f m
          , DataSource (Union r) m)
          => DataSource (Union (f ': r)) m where
-  fetch u = case prj u of
-    Right (fx :: f x) -> fetch fx
-    Left u' -> fetch u'
+  fetch list = runContT (run RNil RNil list) (\(_, _, x) -> return x) where
+    run :: Rec f q
+        -> Rec (Union r) q'
+        -> Rec (Union (f ': r)) q''
+        -> ContT x m (Rec m q, Rec m q', Rec m q'')
+    run flist ulist RNil = lift $ (, , RNil) <$> fetch flist <*> fetch ulist
+    run flist ulist (u :& us) = case prj u of
+      Right (fa :: f a) -> fmap
+        (\(ma :& ms, other, rest) -> (ms, other, ma :& rest))
+        (run (fa :& flist) ulist us)
+      Left u' -> fmap
+        (\(other, ma :& ms, rest) -> (other, ms, ma :& rest))
+        (run flist (u' :& ulist) us)
 
 runFraxl :: forall f m a. DataSource f m => FreerT f m a -> m a
-runFraxl = iterT (run join) where
-  run :: (m a' -> m x) -> Ap f a' -> m x
-  run k (Pure a) = k (return a)
-  run k (Ap fa ff) = flip run ff $ \f' -> do
-    a' <- fetch fa
-    k (f' <*> a')
+runFraxl = iterT $ \a -> runContT (run RNil a) snd where
+  run :: Rec f q -> Ap f a' -> ContT x m (Rec m q, a')
+  run list (Pure a) = lift $ (, a) <$> fetch list
+  run list (Ap fa ff) = do
+    (ma :& ms, f) <- run (fa :& list) ff
+    lift $ fmap ((ms, ) . f) ma
 
-simpleAsyncFetch :: MonadIO m => (f a -> IO a) -> Fetch f m a
-simpleAsyncFetch fetchIO fa
-  = liftIO . wait <$> liftIO (async $ fetchIO fa)
+simpleAsyncFetch :: forall m f q. MonadIO m
+                    => (forall x. f x -> IO x)
+                    -> Fetch f m q
+simpleAsyncFetch fetchIO
+  = rtraverse (fmap (liftIO . wait) . liftIO . async . fetchIO)
 
 newtype CachedFetch f a = CachedFetch (f a)
 
@@ -56,22 +73,27 @@ instance ( DataSource f m
          , DMap.GCompare f
          , MonadIO (t m))
          => DataSource (CachedFetch f) (t m) where
-  fetch (CachedFetch fa) = do
-    cache <- get
-    case DMap.lookup fa cache of
-      Just mvar -> return $ liftIO (readMVar mvar)
-      Nothing -> do
-        mvar <- liftIO newEmptyMVar
-        put (DMap.insert fa mvar cache)
-        fmap
-          (>>= \a -> liftIO (putMVar mvar a) >> return a)
-          (lift $ lift <$> fetch fa)
+  fetch list = runContT (snd <$> run RNil list) return where
+    run :: Rec f q
+        -> Rec (CachedFetch f) q'
+        -> ContT x (t m) (Rec (t m) q, Rec (t m) q')
+    run flist RNil = lift $ (, RNil) <$> lift (rmap lift <$> fetch flist)
+    run flist (CachedFetch f :& fs) = do
+      cache <- get
+      case DMap.lookup f cache of
+        Just mvar -> fmap (second (liftIO (readMVar mvar) :&)) (run flist fs)
+        Nothing -> do
+          (mvar :: MVar a) <- liftIO newEmptyMVar
+          put (DMap.insert f mvar cache)
+          let store :: t m a -> t m a
+              store m = m >>= \a -> liftIO (putMVar mvar a) >> return a
+          fmap (\(m :& ms, rest) -> (ms, store m :& rest)) (run (f :& flist) fs)
 
 runCachedFraxl :: forall m f a.
                   ( MonadIO m
                   , DataSource f m
                   , DMap.GCompare f)
-               => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
+                  => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
 runCachedFraxl a cache = let
   statefulA :: FreerT f (StateT (DMap f MVar) m) a
   statefulA = hoistFreeT lift a
@@ -83,5 +105,5 @@ evalCachedFraxl :: forall m f a.
                    ( MonadIO m
                    , DataSource f m
                    , DMap.GCompare f)
-                => FreerT f m a -> m a
+                   => FreerT f m a -> m a
 evalCachedFraxl a = fst <$> runCachedFraxl a DMap.empty
