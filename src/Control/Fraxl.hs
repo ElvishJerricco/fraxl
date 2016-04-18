@@ -68,11 +68,8 @@ runFraxl = iterT (run RNil (join . fmap snd)) where
 simpleAsyncFetch :: forall m f q. MonadIO m
                     => (forall x. f x -> IO x)
                     -> Fetch f m q
-simpleAsyncFetch fetchIO = rtraverse u where
-  u :: f a -> m (m a)
-  u f = do
-    a <- liftIO $ async (fetchIO f)
-    return $ liftIO (wait a)
+simpleAsyncFetch fetchIO
+  = rtraverse (fmap (liftIO . wait) . liftIO . async . fetchIO)
 
 newtype CachedFetch f a = CachedFetch (f a)
 
