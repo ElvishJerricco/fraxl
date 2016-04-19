@@ -1,0 +1,79 @@
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE StandaloneDeriving         #-}
+
+module ExampleDataSource (
+    -- * requests for this data source
+    Id(..), ExampleReq(..),
+    countAardvarks,
+    listWombats,
+  ) where
+
+import           Control.Applicative.Free.Fast
+import           Control.Monad.Fraxl
+import           Data.GADT.Compare
+
+-- Here is an example minimal data source.  Our data source will have
+-- two requests:
+--
+--   countAardvarks :: String -> Haxl Int
+--   listWombats    :: Id     -> Haxl [Id]
+--
+-- First, the data source defines a request type, with one constructor
+-- for each request:
+
+newtype Id = Id Int
+  deriving (Eq, Ord, Enum, Num, Integral, Real)
+
+instance Show Id where
+  show (Id i) = show i
+
+data ExampleReq a where
+  CountAardvarks :: String -> ExampleReq Int
+  ListWombats    :: Id     -> ExampleReq [Id]
+
+-- The request type (ExampleReq) is parameterized by the result type of
+-- each request.  Each request might have a different result, so we use a
+-- GADT - a data type in which each constructor may have different type
+-- parameters. Here CountAardvarks is a request that takes a String
+-- argument and its result is Int, whereas ListWombats takes an Id
+-- argument and returns a [Id].
+
+deriving instance Show (ExampleReq a)
+
+instance GEq ExampleReq where
+  CountAardvarks a `geq` CountAardvarks b = if a == b
+    then Just Refl
+    else Nothing
+  ListWombats a `geq` ListWombats b = if a == b
+    then Just Refl
+    else Nothing
+  _ `geq` _ = Nothing
+
+instance GCompare ExampleReq where
+  CountAardvarks a `gcompare` CountAardvarks b = case a `compare` b of
+    EQ -> GEQ
+    LT -> GLT
+    GT -> GGT
+  ListWombats a `gcompare` ListWombats b = case a `compare` b of
+    EQ -> GEQ
+    LT -> GLT
+    GT -> GGT
+  CountAardvarks _ `gcompare` ListWombats _ = GLT
+  ListWombats _ `gcompare` CountAardvarks _ = GGT
+
+-- We need to define an instance of DataSource:
+
+instance Monad m => DataSource ExampleReq m where
+  fetch ANil = return ANil
+  fetch (ACons (CountAardvarks str) rs) = ACons <$> return (return (length (filter (== 'a') str))) <*> fetch rs
+  fetch (ACons (ListWombats a) rs) = ACons <$> return (return (take (fromIntegral a) [1..])) <*> fetch rs
+
+countAardvarks :: MonadFraxl ExampleReq m => String -> m Int
+countAardvarks str = dataFetch (CountAardvarks str)
+
+listWombats :: MonadFraxl ExampleReq m => Id -> m [Id]
+listWombats a = dataFetch (ListWombats a)

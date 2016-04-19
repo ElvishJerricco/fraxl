@@ -1,0 +1,206 @@
+	Tue Apr 19 03:55 2016 Time and Allocation Profiling Report  (Final)
+
+	   monadbench +RTS -N -p -RTS par1 50000
+
+	total time  =        0.08 secs   (79 ticks @ 1000 us, 1 processor)
+	total alloc = 131,359,624 bytes  (excludes profiling overheads)
+
+COST CENTRE MODULE                        %time %alloc
+
+fetch       ExampleDataSource              13.9   18.0
+MAIN        MAIN                           12.7    0.0
+reduce      Control.Applicative.Free.Fast  10.1   11.0
+<*>.g       Control.Monad.Trans.Free.Ap     8.9    6.1
+unAp        Control.Applicative.Free.Fast   7.6    6.1
+fmap.\.\    Control.Applicative.Free.Fast   6.3   11.0
+fmap        Control.Monad.Trans.Free.Ap     5.1   12.2
+fmap.\      Control.Applicative.Free.Fast   5.1    4.0
+main.n      Main                            5.1    0.0
+<*>         Control.Monad.Trans.Free.Ap     3.8    2.4
+pure        Control.Monad.Trans.Free.Ap     3.8    1.8
+main        Main                            3.8    7.0
+fmap.f'     Control.Monad.Trans.Free.Ap     2.5    4.9
+<*>.\       Control.Applicative.Free.Fast   2.5    1.8
+<*>.\.\     Control.Applicative.Free.Fast   2.5    2.7
+CAF         GHC.Event.Thread                1.3    0.0
+CAF         Text.Printf                     1.3    0.0
+CAF         GHC.IO.Encoding                 1.3    0.0
+fetch.run   Control.Monad.Trans.Fraxl       1.3    6.1
+fetch.run.\ Control.Monad.Trans.Fraxl       1.3    0.9
+dataFetch   Control.Monad.Fraxl.Class       0.0    4.0
+
+
+                                                                              individual     inherited
+COST CENTRE                 MODULE                          no.     entries  %time %alloc   %time %alloc
+
+MAIN                        MAIN                            135           0   12.7    0.0   100.0  100.0
+ main                       Main                            271           0    3.8    7.0    81.0   99.9
+  reduce                    Control.Applicative.Free.Fast   353       50001    3.8    6.4     3.8    6.4
+  runFraxl.\.\              Control.Monad.Trans.Fraxl       336           1    0.0    0.0     6.3   16.1
+   fetch                    Control.Monad.Trans.Fraxl       338           1    0.0    0.0     6.3   16.1
+    fetch.run               Control.Monad.Trans.Fraxl       339       50001    0.0    2.7     6.3   16.1
+     fetch                  Control.Monad.Trans.Fraxl       348           1    0.0    0.0     0.0    0.0
+     fetch                  ExampleDataSource               346       50001    6.3   13.4     6.3   13.4
+     prj                    Data.Dependent.OpenUnion        340       50000    0.0    0.0     0.0    0.0
+      prj'                  Data.Dependent.OpenUnion        341       50000    0.0    0.0     0.0    0.0
+  listWombats               ExampleDataSource               285           0    0.0    0.0     6.3   10.4
+   dataFetch                Control.Monad.Fraxl.Class       286           0    0.0    2.7     6.3   10.4
+    runFraxl                Control.Monad.Trans.Fraxl       322           0    0.0    0.0     5.1    4.0
+     iterT                  Control.Monad.Trans.Free.Ap     325           0    0.0    0.0     5.1    4.0
+      fmap                  Control.Monad.Trans.Free.Ap     326           0    0.0    0.0     5.1    4.0
+       fmap.f'              Control.Monad.Trans.Free.Ap     332           0    0.0    0.0     1.3    2.1
+        fmap                Control.Applicative.Free.Fast   333           0    0.0    0.0     1.3    2.1
+         fmap.\             Control.Applicative.Free.Fast   334       49999    0.0    0.9     1.3    2.1
+          unAp              Control.Applicative.Free.Fast   335       49999    1.3    1.2     1.3    1.2
+       <*>                  Control.Monad.Trans.Free.Ap     327           0    0.0    0.0     3.8    1.8
+        <*>.g               Control.Monad.Trans.Free.Ap     328           0    0.0    0.0     3.8    1.8
+         fmap               Control.Applicative.Free.Fast   329           0    0.0    0.0     3.8    1.8
+          fmap.\            Control.Applicative.Free.Fast   330       49999    1.3    0.6     3.8    1.8
+           unAp             Control.Applicative.Free.Fast   331       49999    2.5    1.2     2.5    1.2
+     runFraxl.\             Control.Monad.Trans.Fraxl       323           0    0.0    0.0     0.0    0.0
+      unAp                  Control.Applicative.Free.Fast   324           0    0.0    0.0     0.0    0.0
+    liftF                   Control.Monad.Free.Class        287           0    0.0    0.0     1.3    3.7
+     fmap                   Control.Applicative.Free.Fast   314           0    0.0    0.0     1.3    3.7
+      fmap.\                Control.Applicative.Free.Fast   315       50000    1.3    2.4     1.3    3.7
+       unAp                 Control.Applicative.Free.Fast   316       50000    0.0    1.2     0.0    1.2
+  <*>                       Control.Monad.Trans.Free.Ap     279       50000    0.0    0.0     0.0    0.0
+  main.n                    Main                            277           1    2.5    0.0     2.5    0.0
+  fmap                      Control.Monad.Trans.Free.Ap     275       50001    1.3    3.0     1.3    3.0
+  runFraxl                  Control.Monad.Trans.Fraxl       273           0    0.0    0.0    57.0   56.9
+   runFraxl.\               Control.Monad.Trans.Fraxl       293           1    0.0    0.0     5.1    4.3
+    listWombats             ExampleDataSource               317           0    0.0    0.0     0.0    0.0
+     dataFetch              Control.Monad.Fraxl.Class       318           0    0.0    0.0     0.0    0.0
+      liftF                 Control.Monad.Free.Class        319           0    0.0    0.0     0.0    0.0
+       fmap                 Control.Applicative.Free.Fast   320           0    0.0    0.0     0.0    0.0
+        fmap.\              Control.Applicative.Free.Fast   321           0    0.0    0.0     0.0    0.0
+    unAp                    Control.Applicative.Free.Fast   294      100003    3.8    2.4     5.1    4.3
+     iterT                  Control.Monad.Trans.Free.Ap     296           0    0.0    0.0     1.3    1.8
+      fmap                  Control.Monad.Trans.Free.Ap     301           0    0.0    0.0     1.3    1.8
+       <*>                  Control.Monad.Trans.Free.Ap     306           0    0.0    0.0     1.3    1.8
+        <*>.g               Control.Monad.Trans.Free.Ap     307           0    0.0    0.0     1.3    1.8
+         fmap               Control.Applicative.Free.Fast   311           0    0.0    0.0     0.0    0.0
+          fmap.\            Control.Applicative.Free.Fast   312           1    0.0    0.0     0.0    0.0
+         <*>                Control.Applicative.Free.Fast   308           0    0.0    0.0     1.3    1.8
+          <*>.\             Control.Applicative.Free.Fast   309       49999    1.3    1.8     1.3    1.8
+       fmap.f'              Control.Monad.Trans.Free.Ap     302           0    0.0    0.0     0.0    0.0
+        fmap                Control.Applicative.Free.Fast   303           0    0.0    0.0     0.0    0.0
+         fmap.\             Control.Applicative.Free.Fast   304           2    0.0    0.0     0.0    0.0
+      fmap                  Control.Monad.Trans.Free.Ap     297           0    0.0    0.0     0.0    0.0
+       fmap                 Control.Applicative.Free.Fast   298           0    0.0    0.0     0.0    0.0
+        fmap.\              Control.Applicative.Free.Fast   299           1    0.0    0.0     0.0    0.0
+   iterT                    Control.Monad.Trans.Free.Ap     274           2    0.0    0.0    51.9   52.7
+    runFraxl.\.\            Control.Monad.Trans.Fraxl       337           0    0.0    0.0    25.3   21.3
+     fmap                   Control.Monad.Trans.Free.Ap     431           1    0.0    0.0     0.0    0.0
+     fmap                   Control.Monad.Trans.Free.Ap     400           0    0.0    0.0     0.0    0.0
+      fmap.f'               Control.Monad.Trans.Free.Ap     432           1    0.0    0.0     0.0    0.0
+      <*>                   Control.Monad.Trans.Free.Ap     408           0    0.0    0.0     0.0    0.0
+       <*>.g                Control.Monad.Trans.Free.Ap     409           0    0.0    0.0     0.0    0.0
+        <*>                 Control.Applicative.Free.Fast   410           0    0.0    0.0     0.0    0.0
+         <*>.\              Control.Applicative.Free.Fast   411           0    0.0    0.0     0.0    0.0
+          <*>.\.\           Control.Applicative.Free.Fast   412           0    0.0    0.0     0.0    0.0
+     listWombats            ExampleDataSource               355           0    0.0    0.0     8.9    7.9
+      dataFetch             Control.Monad.Fraxl.Class       356           0    0.0    0.0     8.9    7.9
+       return               Control.Monad.Trans.Free.Ap     429           0    0.0    0.0     1.3    0.0
+        pure                Control.Monad.Trans.Free.Ap     430           0    1.3    0.0     1.3    0.0
+       liftF                Control.Monad.Free.Class        357           0    0.0    0.0     7.6    7.9
+        fmap                Control.Applicative.Free.Fast   358           0    0.0    0.0     7.6    7.9
+         fmap.\             Control.Applicative.Free.Fast   359           0    0.0    0.0     7.6    7.9
+          fmap.\.\          Control.Applicative.Free.Fast   360           1    0.0    0.0     7.6    7.9
+           return           Control.Monad.Trans.Free.Ap     416           0    0.0    0.0     0.0    0.0
+            pure            Control.Monad.Trans.Free.Ap     417           1    0.0    0.0     0.0    0.0
+           <*>              Control.Monad.Trans.Free.Ap     413           0    0.0    1.2     7.6    7.9
+            <*>.g           Control.Monad.Trans.Free.Ap     423       49999    3.8    1.8     3.8    1.8
+             <*>            Control.Applicative.Free.Fast   424           0    0.0    0.0     0.0    0.0
+              <*>.\         Control.Applicative.Free.Fast   425           0    0.0    0.0     0.0    0.0
+               <*>.\.\      Control.Applicative.Free.Fast   426           0    0.0    0.0     0.0    0.0
+            fmap            Control.Monad.Trans.Free.Ap     414           0    3.8    3.0     3.8    4.9
+             fmap.f'        Control.Monad.Trans.Free.Ap     433       50001    0.0    1.8     0.0    1.8
+           fmap             Control.Monad.Trans.Free.Ap     363           1    0.0    0.0     0.0    0.0
+            <*>             Control.Monad.Trans.Free.Ap     369           0    0.0    0.0     0.0    0.0
+             <*>.g          Control.Monad.Trans.Free.Ap     370           0    0.0    0.0     0.0    0.0
+              <*>           Control.Applicative.Free.Fast   386           0    0.0    0.0     0.0    0.0
+               <*>.\        Control.Applicative.Free.Fast   387           0    0.0    0.0     0.0    0.0
+                <*>.\.\     Control.Applicative.Free.Fast   388           0    0.0    0.0     0.0    0.0
+                 runFraxl.\ Control.Monad.Trans.Fraxl       389           0    0.0    0.0     0.0    0.0
+                  unAp      Control.Applicative.Free.Fast   390           0    0.0    0.0     0.0    0.0
+            fmap.f'         Control.Monad.Trans.Free.Ap     364           0    0.0    0.0     0.0    0.0
+     reduce                 Control.Applicative.Free.Fast   354           0    6.3    4.6     6.3    4.6
+     fetch                  Control.Monad.Trans.Fraxl       344           0    0.0    0.0    10.1    8.8
+      fetch.\               Control.Monad.Trans.Fraxl       351           1    0.0    0.0     0.0    0.0
+      fetch.run             Control.Monad.Trans.Fraxl       345           0    1.3    3.3    10.1    8.8
+       fetch.run.\          Control.Monad.Trans.Fraxl       350       50000    1.3    0.9     1.3    0.9
+       fetch                ExampleDataSource               347           0    7.6    4.6     7.6    4.6
+    fmap                    Control.Monad.Trans.Free.Ap     290           1    0.0    0.0     0.0    0.0
+     fmap                   Control.Applicative.Free.Fast   295           1    0.0    0.0     0.0    0.0
+      fmap.\                Control.Applicative.Free.Fast   397           0    0.0    0.0     0.0    0.0
+       fmap.\.\             Control.Applicative.Free.Fast   398           1    0.0    0.0     0.0    0.0
+    fmap                    Control.Monad.Trans.Free.Ap     276       50001    0.0    6.1    26.6   31.4
+     fmap.f'                Control.Monad.Trans.Free.Ap     291       50001    2.5    3.0     3.8    5.2
+      fmap                  Control.Applicative.Free.Fast   300       50001    0.0    0.0     1.3    2.1
+       fmap.\               Control.Applicative.Free.Fast   361           0    1.3    0.0     1.3    2.1
+        fmap.\.\            Control.Applicative.Free.Fast   362       50001    0.0    2.1     0.0    2.1
+         runFraxl.\         Control.Monad.Trans.Fraxl       377           0    0.0    0.0     0.0    0.0
+          unAp              Control.Applicative.Free.Fast   378           0    0.0    0.0     0.0    0.0
+         listWombats        ExampleDataSource               365           0    0.0    0.0     0.0    0.0
+          dataFetch         Control.Monad.Fraxl.Class       366           0    0.0    0.0     0.0    0.0
+     <*>                    Control.Monad.Trans.Free.Ap     280       49999    3.8    1.2    22.8   20.1
+      <*>.g                 Control.Monad.Trans.Free.Ap     292       50000    5.1    4.3    19.0   18.9
+       fmap                 Control.Applicative.Free.Fast   310       50000    0.0    0.0     7.6   11.0
+        fmap.\              Control.Applicative.Free.Fast   367           0    1.3    0.0     7.6   11.0
+         fmap.\.\           Control.Applicative.Free.Fast   368       99999    3.8    7.9     6.3   11.0
+          <*>               Control.Applicative.Free.Fast   381           0    0.0    0.0     0.0    0.0
+           <*>.\            Control.Applicative.Free.Fast   382           0    0.0    0.0     0.0    0.0
+            <*>.\.\         Control.Applicative.Free.Fast   383           0    0.0    0.0     0.0    0.0
+             runFraxl.\     Control.Monad.Trans.Fraxl       384           0    0.0    0.0     0.0    0.0
+              unAp          Control.Applicative.Free.Fast   385           0    0.0    0.0     0.0    0.0
+          runFraxl.\        Control.Monad.Trans.Fraxl       375           0    0.0    0.0     0.0    0.0
+           unAp             Control.Applicative.Free.Fast   376           0    0.0    0.0     0.0    0.0
+          listWombats       ExampleDataSource               371           0    0.0    0.0     2.5    3.0
+           dataFetch        Control.Monad.Fraxl.Class       372           0    0.0    1.2     2.5    3.0
+            return          Control.Monad.Trans.Free.Ap     427           0    0.0    0.0     2.5    1.8
+             pure           Control.Monad.Trans.Free.Ap     428       49999    2.5    1.8     2.5    1.8
+            fmap.f'         Control.Monad.Trans.Free.Ap     374           0    0.0    0.0     0.0    0.0
+            liftF           Control.Monad.Free.Class        373           0    0.0    0.0     0.0    0.0
+       <*>                  Control.Applicative.Free.Fast   305       49999    0.0    0.0     6.3    3.7
+        <*>.\               Control.Applicative.Free.Fast   379           0    1.3    0.0     6.3    3.7
+         <*>.\.\            Control.Applicative.Free.Fast   380       49999    2.5    2.7     5.1    3.7
+          fmap              Control.Applicative.Free.Fast   420           0    0.0    0.0     2.5    0.9
+           fmap.\           Control.Applicative.Free.Fast   421           0    0.0    0.0     2.5    0.9
+            fmap.\.\        Control.Applicative.Free.Fast   422           0    2.5    0.9     2.5    0.9
+          runFraxl.\.\      Control.Monad.Trans.Fraxl       401           0    0.0    0.0     0.0    0.0
+           listWombats      ExampleDataSource               402           0    0.0    0.0     0.0    0.0
+            dataFetch       Control.Monad.Fraxl.Class       403           0    0.0    0.0     0.0    0.0
+             liftF          Control.Monad.Free.Class        404           0    0.0    0.0     0.0    0.0
+              fmap          Control.Applicative.Free.Fast   405           0    0.0    0.0     0.0    0.0
+               fmap.\       Control.Applicative.Free.Fast   406           0    0.0    0.0     0.0    0.0
+                fmap.\.\    Control.Applicative.Free.Fast   407           0    0.0    0.0     0.0    0.0
+          fmap.f'           Control.Monad.Trans.Free.Ap     393           0    0.0    0.0     0.0    0.0
+           fmap             Control.Applicative.Free.Fast   394           0    0.0    0.0     0.0    0.0
+            fmap.\          Control.Applicative.Free.Fast   395           0    0.0    0.0     0.0    0.0
+             fmap.\.\       Control.Applicative.Free.Fast   396           0    0.0    0.0     0.0    0.0
+              fmap          Control.Monad.Trans.Free.Ap     399           0    0.0    0.0     0.0    0.0
+          runFraxl.\        Control.Monad.Trans.Fraxl       391           0    0.0    0.0     0.0    0.0
+           unAp             Control.Applicative.Free.Fast   392           0    0.0    0.0     0.0    0.0
+ CAF                        Main                            269           0    0.0    0.0     2.5    0.0
+  return                    Control.Monad.Trans.Free.Ap     415           1    0.0    0.0     0.0    0.0
+  inj                       Data.Dependent.OpenUnion        342           1    0.0    0.0     0.0    0.0
+  main                      Main                            270           1    0.0    0.0     2.5    0.0
+   pure                     Control.Monad.Trans.Free.Ap     289           1    0.0    0.0     0.0    0.0
+   listWombats              ExampleDataSource               281           1    0.0    0.0     0.0    0.0
+    dataFetch               Control.Monad.Fraxl.Class       282           1    0.0    0.0     0.0    0.0
+     liftF                  Control.Monad.Free.Class        283           1    0.0    0.0     0.0    0.0
+      fmap                  Control.Applicative.Free.Fast   313           1    0.0    0.0     0.0    0.0
+      wrap                  Control.Monad.Trans.Free.Ap     284           1    0.0    0.0     0.0    0.0
+   main.n                   Main                            278           0    2.5    0.0     2.5    0.0
+   runFraxl                 Control.Monad.Trans.Fraxl       272           1    0.0    0.0     0.0    0.0
+ CAF                        Control.Monad.Trans.Fraxl       265           0    0.0    0.0     0.0    0.0
+ CAF                        Data.Dependent.OpenUnion        212           0    0.0    0.0     0.0    0.0
+  inj'                      Data.Dependent.OpenUnion        343           1    0.0    0.0     0.0    0.0
+ CAF                        GHC.Conc.Signal                 185           0    0.0    0.0     0.0    0.0
+ CAF                        GHC.Float                       180           0    0.0    0.0     0.0    0.0
+ CAF                        GHC.IO.Encoding                 178           0    1.3    0.0     1.3    0.0
+ CAF                        GHC.IO.Encoding.Iconv           176           0    0.0    0.0     0.0    0.0
+ CAF                        GHC.IO.Handle.FD                168           0    0.0    0.0     0.0    0.0
+ CAF                        Text.Printf                     155           0    1.3    0.0     1.3    0.0
+ CAF                        Text.Read.Lex                   153           0    0.0    0.0     0.0    0.0
+ CAF                        GHC.Event.Thread                144           0    1.3    0.0     1.3    0.0
