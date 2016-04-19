@@ -18,11 +18,11 @@ data MySource a where
   MyInt :: MySource Int
 
 class Monad m => DataSource f m
-  fetch :: Rec f q -> m (Rec m q)
+  fetch :: ASeq f a -> m (ASeq m a)
 
 instance MonadIO m => DataSource MySource m where
-  fetch RNil = return RNil
-  fetch (f :& fs) = ((:&) . liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
+  fetch ANil = return ANil
+  fetch (ACons f fs) = ((:&) . liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
 ```
 
 You'll notice a few things here.
@@ -32,9 +32,9 @@ Fraxl is a monad transformer, allowing you to use arbitrary underlying monads.
 Thus, maintaining state between fetches can be left up to the data source.
 This can be used for several things, such as caching or session management.
 
-`Rec :: (k -> *) -> [k] -> *` is used as a heterogenous list.
-`Rec f [a, b, c, ...]` is essentially a list of `f` requests
-with types `a`, `b`, `c`, `...`.
+`ASeq :: (* -> *) -> * -> *` is similar to a heterogenous list.
+It is the data structure used by the fast free applicative.
+Interpreting this is akin to interpreting the free applicative.
 
 The `fetch` method takes a list of `f` requests,
 and for each request, returns an `m` action that waits on the response.
