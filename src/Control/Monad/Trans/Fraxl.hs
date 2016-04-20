@@ -16,7 +16,7 @@ import           Control.Arrow
 import           Control.Concurrent
 import           Control.Concurrent.Async
 import           Control.Monad
-import           Control.Monad.Cont
+import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Control.Monad.Trans.Free.Ap   hiding (Pure)
 import           Data.Dependent.Map            (DMap)
@@ -37,12 +37,12 @@ instance Monad m => DataSource (Union '[]) m where
 instance ( DataSource f m
          , DataSource (Union r) m)
          => DataSource (Union (f ': r)) m where
-  fetch list = runContT (run ANil ANil list) (\(_, _, x) -> return x) where
+  fetch list = (\(_, _, x) -> x) <$> run ANil ANil list where
     run :: ASeq f a
         -> ASeq (Union r) a'
         -> ASeq (Union (f ': r)) a''
-        -> ContT x m (ASeq m a, ASeq m a', ASeq m a'')
-    run flist ulist ANil = lift $ (, , ANil) <$> fetch flist <*> fetch ulist
+        -> m (ASeq m a, ASeq m a', ASeq m a'')
+    run flist ulist ANil = (, , ANil) <$> fetch flist <*> fetch ulist
     run flist ulist (ACons u us) = case prj u of
       Right (fa :: f a) -> fmap
         (\(ACons ma ms, other, rest) -> (ms, other, ACons ma rest))
@@ -68,11 +68,11 @@ instance ( DataSource f m
          , DMap.GCompare f
          , MonadIO (t m))
          => DataSource (CachedFetch f) (t m) where
-  fetch list = runContT (snd <$> run ANil list) return where
+  fetch list = snd <$> run ANil list where
     run :: ASeq f a
         -> ASeq (CachedFetch f) a'
-        -> ContT x (t m) (ASeq (t m) a, ASeq (t m) a')
-    run flist ANil = lift $ (, ANil) <$> lift (hoistASeq lift <$> fetch flist)
+        -> t m (ASeq (t m) a, ASeq (t m) a')
+    run flist ANil = (, ANil) <$> lift (hoistASeq lift <$> fetch flist)
     run flist (ACons (CachedFetch f) fs) = do
       cache <- get
       case DMap.lookup f cache of
