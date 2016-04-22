@@ -1,7 +1,11 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Control.Monad.Fraxl.Class where
+module Control.Monad.Fraxl.Class
+ (
+ -- * Fraxl Monads
+   MonadFraxl(..)
+ ) where
 
 import           Control.Applicative.Free.Fast
 import           Control.Monad.Trans.Class

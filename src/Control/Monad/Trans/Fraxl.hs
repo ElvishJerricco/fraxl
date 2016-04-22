@@ -9,7 +9,27 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Control.Monad.Trans.Fraxl where
+module Control.Monad.Trans.Fraxl
+  (
+  -- * The Fraxl Monad
+    FreerT
+  , Fraxl
+  , Fetch
+  , DataSource(..)
+  , runFraxl
+  , simpleAsyncFetch
+  -- * The Sequence of Effects
+  , ASeq(..)
+  , reduceASeq
+  , hoistASeq
+  , traverseASeq
+  , rebaseASeq
+  -- * Caching
+  , CachedFetch(..)
+  , runCachedFraxl
+  , evalCachedFraxl
+  , module Data.GADT.Compare
+  ) where
 
 import           Control.Applicative.Free.Fast
 import           Control.Arrow
@@ -18,10 +38,11 @@ import           Control.Concurrent.Async
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.State
-import           Control.Monad.Trans.Free.Ap   hiding (Pure)
+import           Control.Monad.Trans.Free.Ap
 import           Data.Dependent.Map            (DMap)
 import qualified Data.Dependent.Map            as DMap
 import           Data.Dependent.OpenUnion
+import           Data.GADT.Compare
 
 type FreerT f = FreeT (Ap f)
 type Fraxl r = FreerT (Union r)
@@ -65,7 +86,7 @@ newtype CachedFetch f a = CachedFetch (f a)
 instance ( DataSource f m
          , MonadTrans t
          , MonadState (DMap f MVar) (t m)
-         , DMap.GCompare f
+         , GCompare f
          , MonadIO (t m))
          => DataSource (CachedFetch f) (t m) where
   fetch list = snd <$> run ANil list where
@@ -87,7 +108,7 @@ instance ( DataSource f m
 runCachedFraxl :: forall m f a.
                   ( MonadIO m
                   , DataSource f m
-                  , DMap.GCompare f)
+                  , GCompare f)
                   => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
 runCachedFraxl a cache = let
   statefulA :: FreerT f (StateT (DMap f MVar) m) a
@@ -99,6 +120,6 @@ runCachedFraxl a cache = let
 evalCachedFraxl :: forall m f a.
                    ( MonadIO m
                    , DataSource f m
-                   , DMap.GCompare f)
+                   , GCompare f)
                    => FreerT f m a -> m a
 evalCachedFraxl a = fst <$> runCachedFraxl a DMap.empty

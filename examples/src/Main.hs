@@ -7,12 +7,10 @@
 
 module Main where
 
-import           Control.Applicative.Free.Fast
 import           Control.Concurrent
 import           Control.Monad.Fraxl
 import           Control.Monad.IO.Class
 import           Control.Monad.State
-import           Data.GADT.Compare
 
 main :: IO ()
 main = do

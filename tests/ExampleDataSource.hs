@@ -12,9 +12,7 @@ module ExampleDataSource (
     listWombats,
   ) where
 
-import           Control.Applicative.Free.Fast
 import           Control.Monad.Fraxl
-import           Data.GADT.Compare
 
 -- Here is an example minimal data source.  Our data source will have
 -- two requests:
