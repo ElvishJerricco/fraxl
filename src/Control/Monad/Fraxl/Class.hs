@@ -25,7 +25,9 @@ import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Strict
 import           Data.Dependent.OpenUnion
 
+-- | Class for Fraxl-capable monads.
 class Monad m => MonadFraxl f m where
+  -- | 'dataFetch' is used to make a request of type 'f'.
   dataFetch :: f a -> m a
 
 instance (DataSource f m, Member f r) => MonadFraxl f (Fraxl r m) where
