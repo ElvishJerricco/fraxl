@@ -106,7 +106,7 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   decompose Haxl into more general parts, in order to form a stronger
 --   composition with better type safety and purity.
 --   
---   Usage ---
+--   <h1>Usage</h1>
 --   
 --   Using Fraxl is fairly similar to Haxl. You define a request data type
 --   (often a GADT), and a <a>DataSource</a> instance. With this, Fraxl is
@@ -122,7 +122,7 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   
 --   instance MonadIO m =&gt; DataSource MySource m where
 --     fetch ANil = return ANil
---     fetch (ACons f fs) = ((:&amp;) . liftIO . wait) <a>$</a> liftIO (async $ downloadSource f) <a>*</a> fetch fs
+--     fetch (ACons f fs) = (ACons . liftIO . wait) <a>$</a> liftIO (async $ downloadSource f) <a>*</a> fetch fs
 --   </pre>
 --   
 --   You'll notice a few things here. For one, a data source can choose
@@ -132,9 +132,10 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   up to the data source. This can be used for several things, such as
 --   caching or session management.
 --   
---   `ASeq :: (* -&gt; *) -&gt; * -&gt; *` is similar to a heterogenous
---   list. It is the data structure used by the fast free applicative.
---   Interpreting this is akin to interpreting the free applicative.
+--   <tt>ASeq :: (* -&gt; *) -&gt; * -&gt; *</tt> is similar to a
+--   heterogenous list. It is the data structure used by the fast free
+--   applicative. Interpreting this is akin to interpreting the free
+--   applicative.
 --   
 --   The <a>fetch</a> method takes a list of <tt>f</tt> requests, and for
 --   each request, returns an <tt>m</tt> action that waits on the response.
@@ -143,31 +144,29 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   complete. This way, Fraxl can have many requests start their work in
 --   parallel, and call all their wait-actions together.
 --   
---   Composition ---
+--   <h1>Composition</h1>
 --   
 --   Fraxl is a composition of general tools. At the base of this
 --   composition is a free monad transformer ([the basis of which is
 --   described
 --   here](http:/<i>elvishjerricco.github.io</i>2016<i>04</i>08/applicative-effects-in-free-monads.html)).
 --   This is because Fraxl (and Haxl) is necessarily a free monad. It's
---   taking arbitrary data sources of kind `* -&gt; *`, and constructing a
---   monad out of them. Since there exists a free monad transformer with
---   applicative optimization, there's no reason not to use it and get the
---   transformer structure for free.
+--   taking arbitrary data sources of kind <tt>* -&gt; *</tt>, and
+--   constructing a monad out of them. Since there exists a free monad
+--   transformer with applicative optimization, there's no reason not to
+--   use it and get the transformer structure for free.
 --   
---   <ul>
---   <li>*NOTE:** *This free monad is not in the latest version of
---   <tt>free</tt> yet. So <tt>free</tt> is used as a git submodule to gain
---   access to it.*</li>
---   </ul>
+--   <b>NOTE:</b> <i>This free monad is not in the latest version of
+--   <tt>free</tt> yet.</i> <i>So <tt>free</tt> is used as a git submodule
+--   to gain access to it.</i>
 --   
 --   The next layer of the composition is the free applicative. The free
 --   monad with applicative optimization uses any applicative (rather than
 --   any functor, as with the traditional free monad). Since the free
---   applicative uses any type of kind `* -&gt; *`, it is the perfect
---   candidate for this layer. It allows Fraxl to see all the requests made
---   in an applicative computation at once, which is how Fraxl can
---   parallelize them.
+--   applicative uses any type of kind <tt>* -&gt; *</tt>, it is the
+--   perfect candidate for this layer. It allows Fraxl to see all the
+--   requests made in an applicative computation at once, which is how
+--   Fraxl can parallelize them.
 --   
 --   The final layer is the data source layer. It is user-specified, but
 --   will often be a dependent open union. The dependent open union is
@@ -184,7 +183,7 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   caches the results of the original. It does this with a dependent map,
 --   whose keys are requests, and whose values are <tt>MVars</tt> of the
 --   results. If an uncached request is requested, an empty <tt>MVar</tt>
---   is inserted into the cache map, the original <a>fetch</a> is called,
+--   is inserted into the cache map, the original <tt>fetch</tt> is called,
 --   and the result is stored in the <tt>MVar</tt>. If a cached request is
 --   requested, the wait-action returned will simply be <tt>readMVar</tt>.
 module Control.Monad.Fraxl
