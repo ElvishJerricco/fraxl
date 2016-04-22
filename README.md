@@ -1,6 +1,8 @@
 Fraxl
 ---
 
+[Documentation](http://elvishjerricco.github.io/fraxl/fraxl-0.1.0.0/)
+
 Fraxl is a library based on Facebook's [Haxl](https://github.com/facebook/Haxl).
 The goal is to decompose Haxl into more general parts,
 in order to form a stronger composition with better type safety and purity.
