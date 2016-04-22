@@ -24,7 +24,7 @@ class Monad m => DataSource f m
 
 instance MonadIO m => DataSource MySource m where
   fetch ANil = return ANil
-  fetch (ACons f fs) = ((:&) . liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
+  fetch (ACons f fs) = (ACons. liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
 ```
 
 You'll notice a few things here.
