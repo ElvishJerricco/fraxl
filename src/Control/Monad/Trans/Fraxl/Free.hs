@@ -69,26 +69,27 @@ import           Data.TASequence.FastCatQueue
 
 -- Arrows for type-aligned.
 -- http://okmij.org/ftp/Haskell/zseq.pdf
-newtype Arr f m a b = Arr { runArr :: a -> FreeT f m b }
-type Arrs f m = FastTCQueue (Arr f m)
+type Arr f m = Kleisli (FreeT f m)
 
-(>.<) :: Applicative m
+(>.<) :: (Applicative m, TASequence s)
       => (FreeT f m b -> FreeT f m c)
-      -> Arrs f m a b
-      -> Arrs f m a c
+      -> s (Arr f m) a b
+      -> s (Arr f m) a c
 (>.<) f arrs = case tviewr arrs of
-  TAEmptyR -> tsingleton $ Arr (f . freePure)
-  ks :> Arr ar -> ks |> Arr (f . ar)
+  TAEmptyR -> tsingleton $ Kleisli (f . freePure)
+  ks :> Kleisli ar -> ks |> Kleisli (f . ar)
 
-qApp :: (Applicative f, Monad m) => Arrs f m a b -> a -> FreeT f m b
+qApp :: (Applicative f, Monad m, TASequence s)
+     => s (Arr f m) a b
+     -> a -> FreeT f m b
 qApp arrs a = case tviewl arrs of
-  TAEmptyL -> freePure a
-  Arr k :< ks -> k a >>= qApp ks
+  TAEmptyL -> pure a
+  Kleisli k :< ks -> k a >>= qApp ks
 
 -- | The base functor for a free monad.
 data FreeF f m a where
   Pure :: a -> FreeF f m a
-  Free :: f b -> Arrs f m b a -> FreeF f m a
+  Free :: f b -> FastTCQueue (Arr f m) b a -> FreeF f m a
 instance Applicative m => Functor (FreeF f m) where
   fmap f (Pure a)  = Pure (f a)
   fmap f (Free b k) = Free b (fmap f >.< k)
@@ -99,7 +100,8 @@ transFreeF :: (Applicative f, Monad m)
            -> FreeF f m a
            -> FreeF g m a
 transFreeF _ (Pure a) = Pure a
-transFreeF t (Free b k) = Free (t b) $ tmap (Arr . (transFreeT t .) . runArr) k
+transFreeF t (Free b k) = Free (t b) k' where
+  k' = tmap (Kleisli . (transFreeT t .) . runKleisli) k
 {-# INLINE transFreeF #-}
 
 -- | The \"free monad transformer\" for an applicative functor @f@
@@ -121,7 +123,7 @@ instance (Applicative f, Monad m) => Applicative (FreeT f m) where
     g :: FreeF f m (a -> b) -> FreeF f m a -> FreeF f m b
     g (Pure f') a' = fmap f' a'
     g (Free b kf) (Pure a') = Free b (fmap ($ a') >.< kf)
-    g (Free b kf) (Free c ka) = Free (f' <$> b <*> c) (tsingleton (Arr id))
+    g (Free b kf) (Free c ka) = Free (f' <$> b <*> c) (tsingleton (Kleisli id))
       where f' b' c' = qApp kf b' <*> qApp ka c'
   {-# INLINE (<*>) #-}
 
@@ -130,14 +132,14 @@ instance (Applicative f, Monad m) => Monad (FreeT f m) where
     freef <- ma
     case freef of
       Pure a -> runFreeT (k a)
-      Free b k' -> return $ Free b (k' |> Arr k)
+      Free b k' -> return $ Free b (k' |> Kleisli k)
   {-# INLINE (>>=) #-}
 
 instance MonadTrans (FreeT f) where
   lift = FreeT . fmap Pure
 
 instance (Applicative f, Monad m) => MonadFree f (FreeT f m) where
-  wrap = FreeT . return . flip Free (tsingleton $ Arr id)
+  wrap = FreeT . return . flip Free (tsingleton $ Kleisli id)
   {-# INLINE wrap #-}
 
 instance (Applicative f, MonadIO m) => MonadIO (FreeT f m) where
@@ -236,7 +238,7 @@ hoistFreeT :: (Monad m, Applicative f)
            -> FreeT f n b
 hoistFreeT mh = FreeT . mh . fmap f . runFreeT where
   f (Pure a) = Pure a
-  f (Free b k) = Free b $ tmap (Arr . (hoistFreeT mh .) . runArr) k
+  f (Free b k) = Free b $ tmap (Kleisli . (hoistFreeT mh .) . runKleisli) k
 
 -- | Lift a natural transformation from @f@ to @g@ into a monad homomorphism from @'FreeT' f m@ to @'FreeT' g m@
 transFreeT :: (Applicative f, Monad m)
