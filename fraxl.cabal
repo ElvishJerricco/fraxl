@@ -18,14 +18,17 @@ library
   exposed-modules:     Control.Monad.Fraxl
                      , Control.Monad.Fraxl.Class
                      , Control.Monad.Trans.Fraxl
+                     , Control.Monad.Trans.Fraxl.Free
   build-depends:       base >= 4.7 && < 5
                      , async
+                     , exceptions
                      , free
                      , transformers
                      , mtl
                      , dependent-sum
                      , dependent-map
                      , dependent-open-union
+                     , type-aligned
   ghc-options:         -Wall
   default-language:    Haskell2010
 

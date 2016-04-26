@@ -38,9 +38,9 @@ import           Control.Concurrent.Async
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.State
-import           Control.Monad.Trans.Free.Ap
-import           Data.Dependent.Map            (DMap)
-import qualified Data.Dependent.Map            as DMap
+import           Control.Monad.Trans.Fraxl.Free
+import           Data.Dependent.Map             (DMap)
+import qualified Data.Dependent.Map             as DMap
 import           Data.Dependent.OpenUnion
 import           Data.GADT.Compare
 
