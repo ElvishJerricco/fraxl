@@ -67,30 +67,26 @@ import           Data.TASequence.FastCatQueue
 --   Impure x k' >>= k = Impure x (k' >=> k)
 --------------------------------------------------------------------------------
 
--- Arrows for type-aligned.
--- http://okmij.org/ftp/Haskell/zseq.pdf
-type Arr f m = Kleisli (FreeT f m)
-
 (>.<) :: (Applicative m, TASequence s)
-      => (FreeT f m b -> FreeT f m c)
-      -> s (Arr f m) a b
-      -> s (Arr f m) a c
+      => (m b -> m c)
+      -> s (Kleisli m) a b
+      -> s (Kleisli m) a c
 (>.<) f arrs = case tviewr arrs of
-  TAEmptyR -> tsingleton $ Kleisli (f . freePure)
+  TAEmptyR -> tsingleton $ Kleisli (f . pure)
   ks :> Kleisli ar -> ks |> Kleisli (f . ar)
 
-qApp :: (Applicative f, Monad m, TASequence s)
-     => s (Arr f m) a b
-     -> a -> FreeT f m b
-qApp arrs a = case tviewl arrs of
-  TAEmptyL -> pure a
-  Kleisli k :< ks -> k a >>= qApp ks
+qApp :: (Monad m, TASequence s)
+     => s (Kleisli m) a b
+     -> Kleisli m a b
+qApp arrs = case tviewl arrs of
+  TAEmptyL -> Kleisli pure
+  k :< ks -> k >>> qApp ks
 
 -- | The base functor for a free monad.
 data FreeF f m a where
   Pure :: a -> FreeF f m a
-  Free :: f b -> FastTCQueue (Arr f m) b a -> FreeF f m a
-instance Applicative m => Functor (FreeF f m) where
+  Free :: f b -> FastTCQueue (Kleisli (FreeT f m)) b a -> FreeF f m a
+instance (Applicative f, Monad m) => Functor (FreeF f m) where
   fmap f (Pure a)  = Pure (f a)
   fmap f (Free b k) = Free b (fmap f >.< k)
   {-# INLINE fmap #-}
@@ -107,7 +103,7 @@ transFreeF t (Free b k) = Free (t b) k' where
 -- | The \"free monad transformer\" for an applicative functor @f@
 newtype FreeT f m a = FreeT { runFreeT :: m (FreeF f m a) }
 
-instance Applicative m => Functor (FreeT f m) where
+instance (Applicative f, Monad m) => Functor (FreeT f m) where
   fmap f (FreeT m) = FreeT $ fmap (fmap f) m
   {-# INLINE fmap #-}
 
@@ -124,7 +120,7 @@ instance (Applicative f, Monad m) => Applicative (FreeT f m) where
     g (Pure f') a' = fmap f' a'
     g (Free b kf) (Pure a') = Free b (fmap ($ a') >.< kf)
     g (Free b kf) (Free c ka) = Free (f' <$> b <*> c) (tsingleton (Kleisli id))
-      where f' b' c' = qApp kf b' <*> qApp ka c'
+      where f' b' c' = runKleisli (qApp kf) b' <*> runKleisli (qApp ka) c'
   {-# INLINE (<*>) #-}
 
 instance (Applicative f, Monad m) => Monad (FreeT f m) where
@@ -215,7 +211,7 @@ iterT f (FreeT m) = do
     val <- m
     case val of
         Pure x -> return x
-        Free y k -> f $ fmap (iterT f . qApp k) y
+        Free y k -> f $ fmap (iterT f . runKleisli (qApp k)) y
 
 -- | Tear down a free monad transformer using iteration over a transformer.
 iterTM :: ( Applicative f
@@ -227,7 +223,7 @@ iterTM f (FreeT m) = do
     val <- lift m
     case val of
         Pure x -> return x
-        Free y k -> f $ fmap (iterTM f . qApp k) y
+        Free y k -> f $ fmap (iterTM f . runKleisli (qApp k)) y
 
 -- | Lift a monad homomorphism from @m@ to @n@ into a monad homomorphism from @'FreeT' f m@ to @'FreeT' f n@
 --
@@ -256,7 +252,7 @@ joinFreeT (FreeT m) = m >>= joinFreeF
   where
     joinFreeF :: FreeF f m a -> m (Free f a)
     joinFreeF (Pure x) = return (return x)
-    joinFreeF (Free y ks) = wrap <$> mapM (joinFreeT . qApp ks) y
+    joinFreeF (Free y ks) = wrap <$> mapM (joinFreeT . runKleisli (qApp ks)) y
 
 -- | Tear down a free monad transformer using Monad instance for @t m@.
 retractT :: (MonadTrans t, Monad (t m), Monad m) => FreeT (t m) m a -> t m a
@@ -264,7 +260,7 @@ retractT (FreeT m) = do
   val <- lift m
   case val of
     Pure x -> return x
-    Free y k -> y >>= retractT . qApp k
+    Free y k -> y >>= retractT . runKleisli (qApp k)
 
 -- | The \"free monad\" for an applicative functor @f@.
 type Free f = FreeT f Identity
@@ -279,7 +275,7 @@ retract :: Monad f => Free f a -> f a
 retract m =
   case runIdentity (runFreeT m) of
     Pure a  -> return a
-    Free x ks -> x >>= retract . qApp ks
+    Free x ks -> x >>= retract . runKleisli (qApp ks)
 
 -- | Tear down a 'Free' 'Monad' using iteration.
 iter :: Applicative f => (f a -> a) -> Free f a -> a
