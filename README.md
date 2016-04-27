@@ -57,9 +57,6 @@ and constructing a monad out of them.
 Since there exists a free monad transformer with applicative optimization,
 there's no reason not to use it and get the transformer structure for free.
 
-**NOTE:** *This free monad is not in the latest version of `free` yet.
-So `free` is used as a git submodule to gain access to it.*
-
 The next layer of the composition is the free applicative.
 The free monad with applicative optimization uses any applicative
 (rather than any functor, as with the traditional free monad).
@@ -67,6 +64,9 @@ Since the free applicative uses any type of kind `* -> *`,
 it is the perfect candidate for this layer.
 It allows Fraxl to see all the requests made in
 an applicative computation at once, which is how Fraxl can parallelize them.
+
+**NOTE:** *This free applicative is not in the latest version of `free` yet.
+So `free` is used as a git submodule to gain access to it.*
 
 The final layer is the data source layer.
 It is user-specified, but will often be a dependent open union.
