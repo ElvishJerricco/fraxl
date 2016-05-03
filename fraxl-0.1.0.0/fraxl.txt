@@ -8,6 +8,141 @@
 @package fraxl
 @version 0.1.0.0
 
+module Control.Monad.Trans.Fraxl.Free
+
+-- | The base functor for a free monad.
+data FreeF f m a
+Pure :: a -> FreeF f m a
+Free :: f b -> FastTCQueue (Kleisli (FreeT f m)) b a -> FreeF f m a
+
+-- | The "free monad transformer" for an applicative functor <tt>f</tt>
+newtype FreeT f m a
+FreeT :: m (FreeF f m a) -> FreeT f m a
+[runFreeT] :: FreeT f m a -> m (FreeF f m a)
+
+-- | The "free monad" for an applicative functor <tt>f</tt>.
+type Free f = FreeT f Identity
+
+-- | A version of lift that can be used with just a Functor for f.
+liftF :: (Functor f, MonadFree f m) => f a -> m a
+
+-- | Tear down a free monad transformer using iteration.
+iterT :: (Applicative f, Monad m) => (f (m a) -> m a) -> FreeT f m a -> m a
+
+-- | Tear down a free monad transformer using iteration over a transformer.
+iterTM :: (Applicative f, Monad m, MonadTrans t, Monad (t m)) => (f (t m a) -> t m a) -> FreeT f m a -> t m a
+
+-- | Lift a monad homomorphism from <tt>m</tt> to <tt>n</tt> into a monad
+--   homomorphism from <tt><a>FreeT</a> f m</tt> to <tt><a>FreeT</a> f
+--   n</tt>
+--   
+--   <pre>
+--   <a>hoistFreeT</a> :: (<a>Monad</a> m, <a>Functor</a> f) =&gt; (m ~&gt; n) -&gt; <a>FreeT</a> f m ~&gt; <a>FreeT</a> f n
+--   </pre>
+hoistFreeT :: (Monad m, Applicative f) => (forall a. m a -> n a) -> FreeT f m b -> FreeT f n b
+
+-- | Lift a natural transformation from <tt>f</tt> to <tt>g</tt> into a
+--   monad homomorphism from <tt><a>FreeT</a> f m</tt> to <tt><a>FreeT</a>
+--   g m</tt>
+transFreeT :: (Applicative f, Monad m) => (forall a. f a -> g a) -> FreeT f m b -> FreeT g m b
+
+-- | Pull out and join <tt>m</tt> layers of <tt><a>FreeT</a> f m a</tt>.
+joinFreeT :: (Monad m, Traversable f, Applicative f) => FreeT f m a -> m (Free f a)
+
+-- | Tear down a free monad transformer using Monad instance for <tt>t
+--   m</tt>.
+retractT :: (MonadTrans t, Monad (t m), Monad m) => FreeT (t m) m a -> t m a
+
+-- | <a>retract</a> is the left inverse of <a>liftF</a>
+--   
+--   <pre>
+--   <a>retract</a> . <a>liftF</a> = <a>id</a>
+--   </pre>
+retract :: Monad f => Free f a -> f a
+
+-- | Tear down a <a>Free</a> <a>Monad</a> using iteration.
+iter :: Applicative f => (f a -> a) -> Free f a -> a
+
+-- | Like <a>iter</a> for monadic values.
+iterM :: (Applicative f, Monad m) => (f (m a) -> m a) -> Free f a -> m a
+
+-- | Monads provide substitution (<a>fmap</a>) and renormalization
+--   (<a>join</a>):
+--   
+--   <pre>
+--   m <a>&gt;&gt;=</a> f = <a>join</a> (<a>fmap</a> f m)
+--   </pre>
+--   
+--   A free <a>Monad</a> is one that does no work during the normalization
+--   step beyond simply grafting the two monadic values together.
+--   
+--   <tt>[]</tt> is not a free <a>Monad</a> (in this sense) because
+--   <tt><a>join</a> [[a]]</tt> smashes the lists flat.
+--   
+--   On the other hand, consider:
+--   
+--   <pre>
+--   data Tree a = Bin (Tree a) (Tree a) | Tip a
+--   </pre>
+--   
+--   <pre>
+--   instance <a>Monad</a> Tree where
+--     <a>return</a> = Tip
+--     Tip a <a>&gt;&gt;=</a> f = f a
+--     Bin l r <a>&gt;&gt;=</a> f = Bin (l <a>&gt;&gt;=</a> f) (r <a>&gt;&gt;=</a> f)
+--   </pre>
+--   
+--   This <a>Monad</a> is the free <a>Monad</a> of Pair:
+--   
+--   <pre>
+--   data Pair a = Pair a a
+--   </pre>
+--   
+--   And we could make an instance of <a>MonadFree</a> for it directly:
+--   
+--   <pre>
+--   instance <a>MonadFree</a> Pair Tree where
+--      <a>wrap</a> (Pair l r) = Bin l r
+--   </pre>
+--   
+--   Or we could choose to program with <tt><a>Free</a> Pair</tt> instead
+--   of <tt>Tree</tt> and thereby avoid having to define our own
+--   <a>Monad</a> instance.
+--   
+--   Moreover, <a>Control.Monad.Free.Church</a> provides a <a>MonadFree</a>
+--   instance that can improve the <i>asymptotic</i> complexity of code
+--   that constructs free monads by effectively reassociating the use of
+--   (<a>&gt;&gt;=</a>). You may also want to take a look at the
+--   <tt>kan-extensions</tt> package
+--   (<a>http://hackage.haskell.org/package/kan-extensions</a>).
+--   
+--   See <a>Free</a> for a more formal definition of the free <a>Monad</a>
+--   for a <a>Functor</a>.
+class Monad m => MonadFree (f :: * -> *) (m :: * -> *) | m -> f
+
+-- | Add a layer.
+--   
+--   <pre>
+--   wrap (fmap f x) ≡ wrap (fmap return x) &gt;&gt;= f
+--   </pre>
+wrap :: MonadFree f m => f (m a) -> m a
+instance (GHC.Base.Applicative f, GHC.Base.Monad m) => GHC.Base.Functor (Control.Monad.Trans.Fraxl.Free.FreeF f m)
+instance (GHC.Base.Applicative f, GHC.Base.Monad m) => GHC.Base.Functor (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, GHC.Base.Monad m) => GHC.Base.Applicative (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, GHC.Base.Monad m) => GHC.Base.Monad (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance Control.Monad.Trans.Class.MonadTrans (Control.Monad.Trans.Fraxl.Free.FreeT f)
+instance (GHC.Base.Applicative f, GHC.Base.Monad m) => Control.Monad.Free.Class.MonadFree f (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.IO.Class.MonadIO m) => Control.Monad.IO.Class.MonadIO (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Reader.Class.MonadReader r m) => Control.Monad.Reader.Class.MonadReader r (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Writer.Class.MonadWriter w m) => Control.Monad.Writer.Class.MonadWriter w (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.State.Class.MonadState s m) => Control.Monad.State.Class.MonadState s (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Error.Class.MonadError e m) => Control.Monad.Error.Class.MonadError e (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Cont.Class.MonadCont m) => Control.Monad.Cont.Class.MonadCont (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, GHC.Base.MonadPlus m) => GHC.Base.Alternative (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, GHC.Base.MonadPlus m) => GHC.Base.MonadPlus (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Catch.MonadThrow m) => Control.Monad.Catch.MonadThrow (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+instance (GHC.Base.Applicative f, Control.Monad.Catch.MonadCatch m) => Control.Monad.Catch.MonadCatch (Control.Monad.Trans.Fraxl.Free.FreeT f m)
+
 module Control.Monad.Trans.Fraxl
 
 -- | Fraxl is based on a particular Freer monad. This Freer monad has
