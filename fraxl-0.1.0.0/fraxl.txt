@@ -154,25 +154,27 @@ type FreerT f = FreeT (Ap f)
 --   variety of data sources.
 type Fraxl r = FreerT (Union r)
 
--- | Data sources produce <a>Fetch</a> functions. They take a sequence of
---   effeects as an argument, and return a corresponding sequence of
---   monadic actions which are used to wait on the results.
-type Fetch f m a = ASeq f a -> m (ASeq m a)
-
 -- | A data source is an effect <tt>f</tt> that operates in some monad
 --   <tt>m</tt>. Given a sequence of effects, a data source should use
 --   <tt>m</tt> to prepare a corresponding sequence of results.
-class Monad m => DataSource f m
-fetch :: DataSource f m => Fetch f m q
+type Fetch f m a = ASeq f a -> m (ASeq m a)
 
--- | Runs a Fraxl computation. This takes <a>FreerT</a> as a parameter
---   rather than <a>Fraxl</a>, because <a>Fraxl</a> is meant for a union of
---   effects, but it should be possible to run a singleton effect.
-runFraxl :: DataSource f m => FreerT f m a -> m a
+-- | Runs a Fraxl computation, using a given <a>Fetch</a> function for
+--   <tt>f</tt>. This takes <a>FreerT</a> as a parameter rather than
+--   <a>Fraxl</a>, because <a>Fraxl</a> is meant for a union of effects,
+--   but it should be possible to run a singleton effect.
+runFraxl :: Monad m => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 
 -- | A simple method of turning an <a>IO</a> bound computation into a
---   <a>DataSource</a> <a>Fetch</a>.
+--   <tt>DataSource</tt> <a>Fetch</a>.
 simpleAsyncFetch :: MonadIO m => (forall x. f x -> IO x) -> Fetch f m a
+
+-- | Fetch empty union. Only necessary to terminate a list of <a>Fetch</a>
+--   functions for <tt>Fetch (Union r)</tt>
+fNil :: Applicative m => Fetch (Union '[]) m a
+
+-- | Like '(:)' for constructing <tt>Fetch (Union (f ': r))</tt>
+(|:|) :: Monad m => (forall a'. Fetch f m a') -> (forall a'. Fetch (Union r) m a') -> Fetch (Union (f : r)) m a
 data ASeq (f :: * -> *) a :: (* -> *) -> * -> *
 ANil :: ASeq f ()
 ACons :: f a1 -> ASeq f u -> ASeq f (a1, u)
@@ -202,17 +204,15 @@ rebaseASeq :: ASeq f u -> (forall x. (x -> y) -> ASeq f x -> z) -> (v -> u -> y)
 --   <a>MVar</a>s of the results.
 newtype CachedFetch f a
 CachedFetch :: (f a) -> CachedFetch f a
+fetchCached :: (Monad m, MonadTrans t, MonadState (DMap f MVar) (t m), GCompare f, MonadIO (t m)) => (forall a'. Fetch f m a') -> Fetch (CachedFetch f) (t m) a
 
 -- | Runs a Fraxl computation with caching using a given starting cache.
 --   Alongside the result, it returns the final cache.
-runCachedFraxl :: (MonadIO m, DataSource f m, GCompare f) => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
+runCachedFraxl :: (MonadIO m, GCompare f) => (forall a'. Fetch f m a') -> FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
 
 -- | Like <a>runCachedFraxl</a>, except it starts with an empty cache and
 --   discards the final cache.
-evalCachedFraxl :: (MonadIO m, DataSource f m, GCompare f) => FreerT f m a -> m a
-instance GHC.Base.Monad m => Control.Monad.Trans.Fraxl.DataSource (Data.Dependent.OpenUnion.Union '[]) m
-instance (Control.Monad.Trans.Fraxl.DataSource f m, Control.Monad.Trans.Fraxl.DataSource (Data.Dependent.OpenUnion.Union r) m) => Control.Monad.Trans.Fraxl.DataSource (Data.Dependent.OpenUnion.Union (f : r)) m
-instance (Control.Monad.Trans.Fraxl.DataSource f m, Control.Monad.Trans.Class.MonadTrans t, Control.Monad.State.Class.MonadState (Data.Dependent.Map.Internal.DMap f GHC.MVar.MVar) (t m), Data.GADT.Compare.GCompare f, Control.Monad.IO.Class.MonadIO (t m)) => Control.Monad.Trans.Fraxl.DataSource (Control.Monad.Trans.Fraxl.CachedFetch f) (t m)
+evalCachedFraxl :: (MonadIO m, GCompare f) => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 
 module Control.Monad.Fraxl.Class
 
@@ -221,8 +221,8 @@ class Monad m => MonadFraxl f m
 
 -- | <a>dataFetch</a> is used to make a request of type <tt>f</tt>.
 dataFetch :: MonadFraxl f m => f a -> m a
-instance (Control.Monad.Trans.Fraxl.DataSource f m, Data.Dependent.OpenUnion.Member f r) => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Fraxl.Fraxl r m)
-instance Control.Monad.Trans.Fraxl.DataSource f m => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Fraxl.FreerT f m)
+instance (GHC.Base.Monad m, Data.Dependent.OpenUnion.Member f r) => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Fraxl.Fraxl r m)
+instance GHC.Base.Monad m => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Fraxl.FreerT f m)
 instance Control.Monad.Fraxl.Class.MonadFraxl f m => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Cont.ContT r m)
 instance Control.Monad.Fraxl.Class.MonadFraxl f m => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Except.ExceptT e m)
 instance Control.Monad.Fraxl.Class.MonadFraxl f m => Control.Monad.Fraxl.Class.MonadFraxl f (Control.Monad.Trans.Identity.IdentityT m)
@@ -244,8 +244,8 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   <h1>Usage</h1>
 --   
 --   Using Fraxl is fairly similar to Haxl. You define a request data type
---   (often a GADT), and a <a>DataSource</a> instance. With this, Fraxl is
---   able to perform requests concurrently.
+--   (often a GADT), and a <tt>DataSource</tt> instance. With this, Fraxl
+--   is able to perform requests concurrently.
 --   
 --   <pre>
 --   data MySource a where
@@ -272,9 +272,9 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   applicative. Interpreting this is akin to interpreting the free
 --   applicative.
 --   
---   The <a>fetch</a> method takes a list of <tt>f</tt> requests, and for
+--   The <tt>fetch</tt> method takes a list of <tt>f</tt> requests, and for
 --   each request, returns an <tt>m</tt> action that waits on the response.
---   That is, <a>fetch</a> should start background threads for requests,
+--   That is, <tt>fetch</tt> should start background threads for requests,
 --   and return all the actions for Fraxl to block with until they
 --   complete. This way, Fraxl can have many requests start their work in
 --   parallel, and call all their wait-actions together.
@@ -332,25 +332,27 @@ type FreerT f = FreeT (Ap f)
 --   variety of data sources.
 type Fraxl r = FreerT (Union r)
 
--- | Data sources produce <a>Fetch</a> functions. They take a sequence of
---   effeects as an argument, and return a corresponding sequence of
---   monadic actions which are used to wait on the results.
-type Fetch f m a = ASeq f a -> m (ASeq m a)
-
 -- | A data source is an effect <tt>f</tt> that operates in some monad
 --   <tt>m</tt>. Given a sequence of effects, a data source should use
 --   <tt>m</tt> to prepare a corresponding sequence of results.
-class Monad m => DataSource f m
-fetch :: DataSource f m => Fetch f m q
+type Fetch f m a = ASeq f a -> m (ASeq m a)
 
--- | Runs a Fraxl computation. This takes <a>FreerT</a> as a parameter
---   rather than <a>Fraxl</a>, because <a>Fraxl</a> is meant for a union of
---   effects, but it should be possible to run a singleton effect.
-runFraxl :: DataSource f m => FreerT f m a -> m a
+-- | Runs a Fraxl computation, using a given <a>Fetch</a> function for
+--   <tt>f</tt>. This takes <a>FreerT</a> as a parameter rather than
+--   <a>Fraxl</a>, because <a>Fraxl</a> is meant for a union of effects,
+--   but it should be possible to run a singleton effect.
+runFraxl :: Monad m => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 
 -- | A simple method of turning an <a>IO</a> bound computation into a
---   <a>DataSource</a> <a>Fetch</a>.
+--   <tt>DataSource</tt> <a>Fetch</a>.
 simpleAsyncFetch :: MonadIO m => (forall x. f x -> IO x) -> Fetch f m a
+
+-- | Fetch empty union. Only necessary to terminate a list of <a>Fetch</a>
+--   functions for <tt>Fetch (Union r)</tt>
+fNil :: Applicative m => Fetch (Union '[]) m a
+
+-- | Like '(:)' for constructing <tt>Fetch (Union (f ': r))</tt>
+(|:|) :: Monad m => (forall a'. Fetch f m a') -> (forall a'. Fetch (Union r) m a') -> Fetch (Union (f : r)) m a
 data ASeq (f :: * -> *) a :: (* -> *) -> * -> *
 ANil :: ASeq f ()
 ACons :: f a1 -> ASeq f u -> ASeq f (a1, u)
@@ -380,14 +382,15 @@ rebaseASeq :: ASeq f u -> (forall x. (x -> y) -> ASeq f x -> z) -> (v -> u -> y)
 --   <a>MVar</a>s of the results.
 newtype CachedFetch f a
 CachedFetch :: (f a) -> CachedFetch f a
+fetchCached :: (Monad m, MonadTrans t, MonadState (DMap f MVar) (t m), GCompare f, MonadIO (t m)) => (forall a'. Fetch f m a') -> Fetch (CachedFetch f) (t m) a
 
 -- | Runs a Fraxl computation with caching using a given starting cache.
 --   Alongside the result, it returns the final cache.
-runCachedFraxl :: (MonadIO m, DataSource f m, GCompare f) => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
+runCachedFraxl :: (MonadIO m, GCompare f) => (forall a'. Fetch f m a') -> FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
 
 -- | Like <a>runCachedFraxl</a>, except it starts with an empty cache and
 --   discards the final cache.
-evalCachedFraxl :: (MonadIO m, DataSource f m, GCompare f) => FreerT f m a -> m a
+evalCachedFraxl :: (MonadIO m, GCompare f) => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 
 -- | Class for Fraxl-capable monads.
 class Monad m => MonadFraxl f m
