@@ -71,12 +71,12 @@ fNil _ = error "Not possible - empty union"
        => (forall a'. Fetch f m a')
        -> (forall a'. Fetch (Union r) m a')
        -> Fetch (Union (f ': r)) m a
-(fet |:| fetU) list = (\(_, _, x) -> x) <$> runUnion ANil ANil list where
+(fetch |:| fetchU) list = (\(_, _, x) -> x) <$> runUnion ANil ANil list where
   runUnion :: ASeq f x
            -> ASeq (Union r) y
            -> ASeq (Union (f ': r)) z
            -> m (ASeq m x, ASeq m y, ASeq m z)
-  runUnion flist ulist ANil = (, , ANil) <$> fet flist <*> fetU ulist
+  runUnion flist ulist ANil = (, , ANil) <$> fetch flist <*> fetchU ulist
   runUnion flist ulist (ACons u us) = case prj u of
     Right (fa :: f x) -> fmap
       (\(ACons ma ms, other, rest) -> (ms, other, ACons ma rest))
@@ -119,11 +119,11 @@ fetchCached :: forall t m f a.
             , GCompare f
             , MonadIO (t m))
             => (forall a'. Fetch f m a') -> Fetch (CachedFetch f) (t m) a
-fetchCached fet list = snd <$> runCached ANil list where
+fetchCached fetch list = snd <$> runCached ANil list where
   runCached :: ASeq f x
             -> ASeq (CachedFetch f) y
             -> t m (ASeq (t m) x, ASeq (t m) y)
-  runCached flist ANil = (, ANil) <$> lift (hoistASeq lift <$> fet flist)
+  runCached flist ANil = (, ANil) <$> lift (hoistASeq lift <$> fetch flist)
   runCached flist (ACons (CachedFetch f) fs) = do
     cache <- get
     case DMap.lookup f cache of
@@ -148,12 +148,12 @@ runCachedFraxl :: forall m f a.
                   -> FreerT f m a
                   -> DMap f MVar
                   -> m (a, DMap f MVar)
-runCachedFraxl fet a cache = let
+runCachedFraxl fetch a cache = let
   statefulA :: FreerT f (StateT (DMap f MVar) m) a
   statefulA = hoistFreeT lift a
   cachedA :: FreerT (CachedFetch f) (StateT (DMap f MVar) m) a
   cachedA = transFreeT (hoistAp CachedFetch) statefulA
-  in runStateT (runFraxl (fetchCached fet) cachedA) cache
+  in runStateT (runFraxl (fetchCached fetch) cachedA) cache
 
 -- | Like 'runCachedFraxl', except it starts with an empty cache
 -- and discards the final cache.
@@ -161,4 +161,4 @@ evalCachedFraxl :: forall m f a.
                    ( MonadIO m
                    , GCompare f)
                    => (forall a'. Fetch f m a') -> FreerT f m a -> m a
-evalCachedFraxl fet a = fst <$> runCachedFraxl fet a DMap.empty
+evalCachedFraxl fetch a = fst <$> runCachedFraxl fetch a DMap.empty
