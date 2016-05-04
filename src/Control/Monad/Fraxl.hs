@@ -93,9 +93,10 @@ module Control.Monad.Fraxl
     FreerT
   , Fraxl
   , Fetch
-  , DataSource(..)
   , runFraxl
   , simpleAsyncFetch
+  , fNil
+  , (|:|)
   -- * The Sequence of Effects
   , ASeq(..)
   , reduceASeq
@@ -104,6 +105,7 @@ module Control.Monad.Fraxl
   , rebaseASeq
   -- * Caching
   , CachedFetch(..)
+  , fetchCached
   , runCachedFraxl
   , evalCachedFraxl
   , module Data.GADT.Compare

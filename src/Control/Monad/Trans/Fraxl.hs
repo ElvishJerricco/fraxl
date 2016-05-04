@@ -15,9 +15,10 @@ module Control.Monad.Trans.Fraxl
     FreerT
   , Fraxl
   , Fetch
-  , DataSource(..)
   , runFraxl
   , simpleAsyncFetch
+  , fNil
+  , (|:|)
   -- * The Sequence of Effects
   , ASeq(..)
   , reduceASeq
@@ -26,6 +27,7 @@ module Control.Monad.Trans.Fraxl
   , rebaseASeq
   -- * Caching
   , CachedFetch(..)
+  , fetchCached
   , runCachedFraxl
   , evalCachedFraxl
   , module Data.GADT.Compare
@@ -59,39 +61,36 @@ type Fraxl r = FreerT (Union r)
 -- which are used to wait on the results.
 type Fetch f m a = ASeq f a -> m (ASeq m a)
 
--- | A data source is an effect @f@ that operates in some monad @m@.
--- Given a sequence of effects,
--- a data source should use @m@ to prepare a corresponding sequence of results.
-class Monad m => DataSource f m where
-  fetch :: Fetch f m q
+fNil :: Applicative m => Fetch (Union '[]) m a
+fNil ANil = pure ANil
+fNil _ = error "Not possible - empty union"
 
-instance Monad m => DataSource (Union '[]) m where
-  fetch ANil = return ANil
-  fetch (ACons _ _) = error "Not possible - empty union"
+(|:|) :: forall f r a m. Monad m
+       => (forall a'. Fetch f m a')
+       -> (forall a'. Fetch (Union r) m a')
+       -> Fetch (Union (f ': r)) m a
+(fet |:| fetU) list = (\(_, _, x) -> x) <$> runUnion ANil ANil list where
+  runUnion :: ASeq f x
+           -> ASeq (Union r) y
+           -> ASeq (Union (f ': r)) z
+           -> m (ASeq m x, ASeq m y, ASeq m z)
+  runUnion flist ulist ANil = (, , ANil) <$> fet flist <*> fetU ulist
+  runUnion flist ulist (ACons u us) = case prj u of
+    Right (fa :: f x) -> fmap
+      (\(ACons ma ms, other, rest) -> (ms, other, ACons ma rest))
+      (runUnion (ACons fa flist) ulist us)
+    Left u' -> fmap
+      (\(other, ACons ma ms, rest) -> (other, ms, ACons ma rest))
+      (runUnion flist (ACons u' ulist) us)
 
-instance ( DataSource f m
-         , DataSource (Union r) m)
-         => DataSource (Union (f ': r)) m where
-  fetch list = (\(_, _, x) -> x) <$> runUnion ANil ANil list where
-    runUnion :: ASeq f a
-        -> ASeq (Union r) a'
-        -> ASeq (Union (f ': r)) a''
-        -> m (ASeq m a, ASeq m a', ASeq m a'')
-    runUnion flist ulist ANil = (, , ANil) <$> fetch flist <*> fetch ulist
-    runUnion flist ulist (ACons u us) = case prj u of
-      Right (fa :: f a) -> fmap
-        (\(ACons ma ms, other, rest) -> (ms, other, ACons ma rest))
-        (runUnion (ACons fa flist) ulist us)
-      Left u' -> fmap
-        (\(other, ACons ma ms, rest) -> (other, ms, ACons ma rest))
-        (runUnion flist (ACons u' ulist) us)
+infixr 5 |:|
 
 -- | Runs a Fraxl computation.
 -- This takes 'FreerT' as a parameter rather than 'Fraxl',
 -- because 'Fraxl' is meant for a union of effects,
 -- but it should be possible to run a singleton effect.
-runFraxl :: forall f m a. DataSource f m => FreerT f m a -> m a
-runFraxl = iterT $ \a -> unAp a
+runFraxl :: Monad m => (forall a'. Fetch f m a') -> FreerT f m a -> m a
+runFraxl fetch = iterT $ \a -> unAp a
   (\f s -> join (reduceASeq <$> fetch s) >>= f) (const id) ANil
 
 -- | A simple method of turning an 'IO' bound computation
@@ -111,51 +110,53 @@ simpleAsyncFetch fetchIO
 -- Keys are requests, and values are 'MVar's of the results.
 newtype CachedFetch f a = CachedFetch (f a)
 
-instance ( DataSource f m
-         , MonadTrans t
-         , MonadState (DMap f MVar) (t m)
-         , GCompare f
-         , MonadIO (t m))
-         => DataSource (CachedFetch f) (t m) where
-  fetch list = snd <$> runCached ANil list where
-    runCached :: ASeq f a
-              -> ASeq (CachedFetch f) a'
-              -> t m (ASeq (t m) a, ASeq (t m) a')
-    runCached flist ANil = (, ANil) <$> lift (hoistASeq lift <$> fetch flist)
-    runCached flist (ACons (CachedFetch f) fs) = do
-      cache <- get
-      case DMap.lookup f cache of
-        Just mvar -> fmap
-          (second (ACons (liftIO $ readMVar mvar)))
-          (runCached flist fs)
-        Nothing -> do
-          (mvar :: MVar x) <- liftIO newEmptyMVar
-          put (DMap.insert f mvar cache)
-          let store :: t m x -> t m x
-              store m = m >>= \a -> liftIO (putMVar mvar a) >> return a
-          fmap
-            (\(ACons m ms, rest) -> (ms, ACons (store m) rest))
-            (runCached (ACons f flist) fs)
+fetchCached :: forall t m f a.
+            ( Monad m
+            , MonadTrans t
+            , MonadState (DMap f MVar) (t m)
+            , GCompare f
+            , MonadIO (t m))
+            => (forall a'. Fetch f m a') -> Fetch (CachedFetch f) (t m) a
+fetchCached fet list = snd <$> runCached ANil list where
+  runCached :: ASeq f x
+            -> ASeq (CachedFetch f) y
+            -> t m (ASeq (t m) x, ASeq (t m) y)
+  runCached flist ANil = (, ANil) <$> lift (hoistASeq lift <$> fet flist)
+  runCached flist (ACons (CachedFetch f) fs) = do
+    cache <- get
+    case DMap.lookup f cache of
+      Just mvar -> fmap
+        (second (ACons (liftIO $ readMVar mvar)))
+        (runCached flist fs)
+      Nothing -> do
+        (mvar :: MVar z) <- liftIO newEmptyMVar
+        put (DMap.insert f mvar cache)
+        let store :: t m z -> t m z
+            store m = m >>= \a -> liftIO (putMVar mvar a) >> return a
+        fmap
+          (\(ACons m ms, rest) -> (ms, ACons (store m) rest))
+          (runCached (ACons f flist) fs)
 
 -- | Runs a Fraxl computation with caching using a given starting cache.
 -- Alongside the result, it returns the final cache.
 runCachedFraxl :: forall m f a.
                   ( MonadIO m
-                  , DataSource f m
                   , GCompare f)
-                  => FreerT f m a -> DMap f MVar -> m (a, DMap f MVar)
-runCachedFraxl a cache = let
+                  => (forall a'. Fetch f m a')
+                  -> FreerT f m a
+                  -> DMap f MVar
+                  -> m (a, DMap f MVar)
+runCachedFraxl fet a cache = let
   statefulA :: FreerT f (StateT (DMap f MVar) m) a
   statefulA = hoistFreeT lift a
   cachedA :: FreerT (CachedFetch f) (StateT (DMap f MVar) m) a
   cachedA = transFreeT (hoistAp CachedFetch) statefulA
-  in runStateT (runFraxl cachedA) cache
+  in runStateT (runFraxl (fetchCached fet) cachedA) cache
 
 -- | Like 'runCachedFraxl', except it starts with an empty cache
 -- and discards the final cache.
 evalCachedFraxl :: forall m f a.
                    ( MonadIO m
-                   , DataSource f m
                    , GCompare f)
-                   => FreerT f m a -> m a
-evalCachedFraxl a = fst <$> runCachedFraxl a DMap.empty
+                   => (forall a'. Fetch f m a') -> FreerT f m a -> m a
+evalCachedFraxl fet a = fst <$> runCachedFraxl fet a DMap.empty

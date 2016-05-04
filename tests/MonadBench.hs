@@ -19,18 +19,18 @@ main = do
     t0 <- getCurrentTime
     case test of
       -- parallel, identical queries
-      "par1" -> evalCachedFraxl $
+      "par1" -> evalCachedFraxl (fetchExample |:| fNil) $
         void $ sequenceA (replicate n (listWombats 3 :: Fraxl '[ExampleReq] IO [Id]))
       -- parallel, distinct queries
-      "par2" -> evalCachedFraxl $
+      "par2" -> evalCachedFraxl (fetchExample |:| fNil) $
         void $ sequenceA (map listWombats [1..fromIntegral n] :: [Fraxl '[ExampleReq] IO [Id]])
       -- sequential, identical queries
-      "seqr" -> evalCachedFraxl $
+      "seqr" -> evalCachedFraxl (fetchExample |:| fNil) $
         foldr andThen (return ()) (replicate n (listWombats 3 :: Fraxl '[ExampleReq] IO [Id]))
       -- sequential, left-associated, distinct queries
-      "seql" -> evalCachedFraxl $
+      "seql" -> evalCachedFraxl (fetchExample |:| fNil) $
         void $ foldl andThen (return []) (map listWombats [1.. fromIntegral n] :: [Fraxl '[ExampleReq] IO [Id]])
-      "tree" -> evalCachedFraxl $ void (tree n :: Fraxl '[ExampleReq] IO [Id])
+      "tree" -> evalCachedFraxl (fetchExample |:| fNil) $ void (tree n :: Fraxl '[ExampleReq] IO [Id])
       _ -> do
         hPutStrLn stderr "syntax: monadbench par1|par2|seqr|seql NUM"
         exitWith (ExitFailure 1)

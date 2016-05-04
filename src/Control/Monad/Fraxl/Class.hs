@@ -30,10 +30,10 @@ class Monad m => MonadFraxl f m where
   -- | 'dataFetch' is used to make a request of type 'f'.
   dataFetch :: f a -> m a
 
-instance (DataSource f m, Member f r) => MonadFraxl f (Fraxl r m) where
+instance (Monad m, Member f r) => MonadFraxl f (Fraxl r m) where
   dataFetch = liftF . liftAp . inj
 
-instance DataSource f m => MonadFraxl f (FreerT f m) where
+instance Monad m => MonadFraxl f (FreerT f m) where
   dataFetch = liftF . liftAp
 
 instance MonadFraxl f m => MonadFraxl f (ContT r m) where

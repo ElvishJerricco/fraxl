@@ -7,9 +7,10 @@
 
 module ExampleDataSource (
     -- * requests for this data source
-    Id(..), ExampleReq(..),
-    countAardvarks,
-    listWombats,
+    Id(..), ExampleReq(..)
+  , fetchExample
+  , countAardvarks
+  , listWombats
   ) where
 
 import           Control.Monad.Fraxl
@@ -65,10 +66,10 @@ instance GCompare ExampleReq where
 
 -- We need to define an instance of DataSource:
 
-instance Monad m => DataSource ExampleReq m where
-  fetch ANil = return ANil
-  fetch (ACons (CountAardvarks str) rs) = ACons <$> return (return (length (filter (== 'a') str))) <*> fetch rs
-  fetch (ACons (ListWombats a) rs) = ACons <$> return (return (take (fromIntegral a) [1..])) <*> fetch rs
+fetchExample :: Monad m => Fetch ExampleReq m a
+fetchExample ANil = return ANil
+fetchExample (ACons (CountAardvarks str) rs) = ACons <$> return (return (length (filter (== 'a') str))) <*> fetchExample rs
+fetchExample (ACons (ListWombats a) rs) = ACons <$> return (return (take (fromIntegral a) [1..])) <*> fetchExample rs
 
 countAardvarks :: MonadFraxl ExampleReq m => String -> m Int
 countAardvarks str = dataFetch (CountAardvarks str)
