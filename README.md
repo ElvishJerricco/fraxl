@@ -19,12 +19,17 @@ data MySource a where
   MyString :: MySource String
   MyInt :: MySource Int
 
-class Monad m => DataSource f m
-  fetch :: ASeq f a -> m (ASeq m a)
+type Fetch f m a = ASeq f a -> m (ASeq m a)
 
-instance MonadIO m => DataSource MySource m where
-  fetch ANil = return ANil
-  fetch (ACons f fs) = (ACons. liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
+fetchMySource :: MonadIO m => Fetch MySource m a
+fetchMySource ANil = return ANil
+fetchMySource (ACons f fs) = (ACons. liftIO . wait)
+  <$> liftIO (async $ downloadSource f)
+  <*> fetchMySource fs
+
+> let a = ...
+> runFraxl fetchMySource a
+
 ```
 
 You'll notice a few things here.
@@ -33,6 +38,12 @@ Unlike Haxl, which only lets you live in `IO`,
 Fraxl is a monad transformer, allowing you to use arbitrary underlying monads.
 Thus, maintaining state between fetches can be left up to the data source.
 This can be used for several things, such as caching or session management.
+
+Unlike Haxl, a data source isn't tied to one fetch function.
+Haxl requires your data source to implement the `DataSource` class.
+By passing a `Fetch` function to Fraxl,
+it's easy to have multiple interpretations of the same data source.
+This is useful for mocking and testing data sources.
 
 `ASeq :: (* -> *) -> * -> *` is similar to a heterogenous list.
 It is the data structure used by the fast free applicative.
