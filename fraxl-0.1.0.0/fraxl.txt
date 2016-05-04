@@ -244,20 +244,24 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   <h1>Usage</h1>
 --   
 --   Using Fraxl is fairly similar to Haxl. You define a request data type
---   (often a GADT), and a <tt>DataSource</tt> instance. With this, Fraxl
---   is able to perform requests concurrently.
+--   (often a GADT), and a <a>Fetch</a> function. With this, Fraxl is able
+--   to perform requests concurrently.
 --   
 --   <pre>
 --   data MySource a where
 --     MyString :: MySource String
 --     MyInt :: MySource Int
 --   
---   class Monad m =&gt; DataSource f m
---     fetch :: ASeq f a -&gt; m (ASeq m a)
+--   type Fetch f m a = ASeq f a -&gt; m (ASeq m a)
 --   
---   instance MonadIO m =&gt; DataSource MySource m where
---     fetch ANil = return ANil
---     fetch (ACons f fs) = (ACons . liftIO . wait) <a>$</a> liftIO (async $ downloadSource f) <a>*</a> fetch fs
+--   fetchMySource :: MonadIO m =&gt; Fetch MySource m a
+--   fetchMySource ANil = return ANil
+--   fetchMySource (ACons f fs) = (ACons. liftIO . wait)
+--     <a>$</a> liftIO (async $ downloadSource f)
+--     <a>*</a> fetchMySource fs
+--   
+--   &gt; let a = ...
+--   &gt; runFraxl fetchMySource a
 --   </pre>
 --   
 --   You'll notice a few things here. For one, a data source can choose
@@ -267,14 +271,20 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   up to the data source. This can be used for several things, such as
 --   caching or session management.
 --   
+--   Unlike Haxl, a data source isn't tied to one fetch function. Haxl
+--   requires your data source to implement the <tt>DataSource</tt> class.
+--   By passing a <a>Fetch</a> function to Fraxl, it's easy to have
+--   multiple interpretations of the same data source. This is useful for
+--   mocking and testing data sources.
+--   
 --   <tt>ASeq :: (* -&gt; *) -&gt; * -&gt; *</tt> is similar to a
 --   heterogenous list. It is the data structure used by the fast free
 --   applicative. Interpreting this is akin to interpreting the free
 --   applicative.
 --   
---   The <tt>fetch</tt> method takes a list of <tt>f</tt> requests, and for
+--   The <a>Fetch</a> function takes a list of <tt>f</tt> requests, and for
 --   each request, returns an <tt>m</tt> action that waits on the response.
---   That is, <tt>fetch</tt> should start background threads for requests,
+--   That is, <a>Fetch</a> should start background threads for requests,
 --   and return all the actions for Fraxl to block with until they
 --   complete. This way, Fraxl can have many requests start their work in
 --   parallel, and call all their wait-actions together.
@@ -291,10 +301,6 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   transformer with applicative optimization, there's no reason not to
 --   use it and get the transformer structure for free.
 --   
---   <b>NOTE:</b> <i>This free monad is not in the latest version of
---   <tt>free</tt> yet.</i> <i>So <tt>free</tt> is used as a git submodule
---   to gain access to it.</i>
---   
 --   The next layer of the composition is the free applicative. The free
 --   monad with applicative optimization uses any applicative (rather than
 --   any functor, as with the traditional free monad). Since the free
@@ -302,6 +308,10 @@ instance (Control.Monad.Fraxl.Class.MonadFraxl f m, GHC.Base.Monoid w) => Contro
 --   perfect candidate for this layer. It allows Fraxl to see all the
 --   requests made in an applicative computation at once, which is how
 --   Fraxl can parallelize them.
+--   
+--   <b>NOTE</b>: *This free applicative is not in the latest version of
+--   <tt>free</tt> yet. So <tt>free</tt> is used as a git submodule to gain
+--   access to it.*
 --   
 --   The final layer is the data source layer. It is user-specified, but
 --   will often be a dependent open union. The dependent open union is
