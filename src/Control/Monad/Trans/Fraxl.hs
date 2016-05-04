@@ -55,16 +55,18 @@ type FreerT f = FreeT (Ap f)
 -- This is because 'Fraxl' is just a free monad over a variety of data sources.
 type Fraxl r = FreerT (Union r)
 
--- | Data sources produce 'Fetch' functions.
--- They take a sequence of effeects as an argument,
--- and return a corresponding sequence of monadic actions
--- which are used to wait on the results.
+-- | A data source is an effect @f@ that operates in some monad @m@.
+-- Given a sequence of effects,
+-- a data source should use @m@ to prepare a corresponding sequence of results.
 type Fetch f m a = ASeq f a -> m (ASeq m a)
 
+-- | Fetch empty union.
+-- Only necessary to terminate a list of 'Fetch' functions for @Fetch (Union r)@
 fNil :: Applicative m => Fetch (Union '[]) m a
 fNil ANil = pure ANil
 fNil _ = error "Not possible - empty union"
 
+-- | Like '(:)' for constructing @Fetch (Union (f ': r))@
 (|:|) :: forall f r a m. Monad m
        => (forall a'. Fetch f m a')
        -> (forall a'. Fetch (Union r) m a')
@@ -85,7 +87,7 @@ fNil _ = error "Not possible - empty union"
 
 infixr 5 |:|
 
--- | Runs a Fraxl computation.
+-- | Runs a Fraxl computation, using a given 'Fetch' function for @f@.
 -- This takes 'FreerT' as a parameter rather than 'Fraxl',
 -- because 'Fraxl' is meant for a union of effects,
 -- but it should be possible to run a singleton effect.
