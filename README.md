@@ -11,7 +11,7 @@ Usage
 ---
 
 Using Fraxl is fairly similar to Haxl.
-You define a request data type (often a GADT), and a `DataSource` instance.
+You define a request data type (often a GADT), and a `Fetch` function.
 With this, Fraxl is able to perform requests concurrently.
 
 ```haskell
