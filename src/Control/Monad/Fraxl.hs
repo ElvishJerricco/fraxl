@@ -7,7 +7,7 @@ in order to form a stronger composition with better type safety and purity.
 = Usage
 
 Using Fraxl is fairly similar to Haxl.
-You define a request data type (often a GADT), and a 'DataSource' instance.
+You define a request data type (often a GADT), and a `Fetch` function.
 With this, Fraxl is able to perform requests concurrently.
 
 @
@@ -15,12 +15,17 @@ data MySource a where
   MyString :: MySource String
   MyInt :: MySource Int
 
-class Monad m => DataSource f m
-  fetch :: ASeq f a -> m (ASeq m a)
+type Fetch f m a = ASeq f a -> m (ASeq m a)
 
-instance MonadIO m => DataSource MySource m where
-  fetch ANil = return ANil
-  fetch (ACons f fs) = (ACons . liftIO . wait) <$> liftIO (async $ downloadSource f) <*> fetch fs
+fetchMySource :: MonadIO m => Fetch MySource m a
+fetchMySource ANil = return ANil
+fetchMySource (ACons f fs) = (ACons. liftIO . wait)
+  <$> liftIO (async $ downloadSource f)
+  <*> fetchMySource fs
+
+> let a = ...
+> runFraxl fetchMySource a
+
 @
 
 You'll notice a few things here.
@@ -30,13 +35,19 @@ Fraxl is a monad transformer, allowing you to use arbitrary underlying monads.
 Thus, maintaining state between fetches can be left up to the data source.
 This can be used for several things, such as caching or session management.
 
+Unlike Haxl, a data source isn't tied to one fetch function.
+Haxl requires your data source to implement the 'DataSource' class.
+By passing a 'Fetch' function to Fraxl,
+it's easy to have multiple interpretations of the same data source.
+This is useful for mocking and testing data sources.
+
 @ASeq :: (* -> *) -> * -> *@ is similar to a heterogenous list.
 It is the data structure used by the fast free applicative.
 Interpreting this is akin to interpreting the free applicative.
 
-The 'fetch' method takes a list of @f@ requests,
+The 'Fetch' function takes a list of @f@ requests,
 and for each request, returns an @m@ action that waits on the response.
-That is, 'fetch' should start background threads for requests,
+That is, 'Fetch' should start background threads for requests,
 and return all the actions for Fraxl to block with until they complete.
 This way, Fraxl can have many requests start their work in parallel,
 and call all their wait-actions together.
@@ -52,9 +63,6 @@ and constructing a monad out of them.
 Since there exists a free monad transformer with applicative optimization,
 there's no reason not to use it and get the transformer structure for free.
 
-__NOTE:__ /This free monad is not in the latest version of @free@ yet./
-/So @free@ is used as a git submodule to gain access to it./
-
 The next layer of the composition is the free applicative.
 The free monad with applicative optimization uses any applicative
 (rather than any functor, as with the traditional free monad).
@@ -62,6 +70,9 @@ Since the free applicative uses any type of kind @* -> *@,
 it is the perfect candidate for this layer.
 It allows Fraxl to see all the requests made in
 an applicative computation at once, which is how Fraxl can parallelize them.
+
+__NOTE__: *This free applicative is not in the latest version of @free@ yet.
+So @free@ is used as a git submodule to gain access to it.*
 
 The final layer is the data source layer.
 It is user-specified, but will often be a dependent open union.

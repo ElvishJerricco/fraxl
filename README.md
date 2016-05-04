@@ -49,7 +49,7 @@ This is useful for mocking and testing data sources.
 It is the data structure used by the fast free applicative.
 Interpreting this is akin to interpreting the free applicative.
 
-The `fetch` method takes a list of `f` requests,
+The `Fetch` function takes a list of `f` requests,
 and for each request, returns an `m` action that waits on the response.
 That is, `fetch` should start background threads for requests,
 and return all the actions for Fraxl to block with until they complete.
