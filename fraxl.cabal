@@ -27,7 +27,6 @@ library
                      , mtl
                      , dependent-sum
                      , dependent-map
-                     , dependent-open-union
                      , vinyl-plus
                      , type-aligned
   ghc-options:         -Wall

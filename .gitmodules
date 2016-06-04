@@ -1,6 +1,3 @@
-[submodule "dependent-open-union"]
-	path = dependent-open-union
-	url = https://github.com/ElvishJerricco/dependent-open-union.git
 [submodule "free"]
 	path = free
 	url = https://github.com/ekmett/free.git
