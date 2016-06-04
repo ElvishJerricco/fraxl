@@ -17,7 +17,7 @@ module Control.Monad.Trans.Fraxl
   , Fetch
   , runFraxl
   , simpleAsyncFetch
-  , fNil
+  , fetchNil
   , (|:|)
   -- * The Sequence of Effects
   , ASeq(..)
@@ -62,9 +62,9 @@ type Fetch f m a = ASeq f a -> m (ASeq m a)
 
 -- | Fetch empty union.
 -- Only necessary to terminate a list of 'Fetch' functions for @Fetch (Union r)@
-fNil :: Applicative m => Fetch (Union '[]) m a
-fNil ANil = pure ANil
-fNil _ = error "Not possible - empty union"
+fetchNil :: Applicative m => Fetch (Union '[]) m a
+fetchNil ANil = pure ANil
+fetchNil _ = error "Not possible - empty union"
 
 -- | Like '(:)' for constructing @Fetch (Union (f ': r))@
 (|:|) :: forall f r a m. Monad m

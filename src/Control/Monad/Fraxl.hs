@@ -106,7 +106,7 @@ module Control.Monad.Fraxl
   , Fetch
   , runFraxl
   , simpleAsyncFetch
-  , fNil
+  , fetchNil
   , (|:|)
   -- * The Sequence of Effects
   , ASeq(..)
