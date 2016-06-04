@@ -2,7 +2,6 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-- free
 extra-deps:
 - text-1.2.2.1
 - vinyl-plus-0.1.1
