@@ -10,7 +10,7 @@ module Control.Monad.Fraxl.Class
    MonadFraxl(..)
  ) where
 
-import           Control.Applicative.Free.Fast
+import           Control.Applicative.Fraxl.Free
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Cont
 import           Control.Monad.Trans.Except

@@ -19,6 +19,7 @@ library
                      , Control.Monad.Fraxl.Class
                      , Control.Monad.Trans.Fraxl
                      , Control.Monad.Trans.Fraxl.Free
+                     , Control.Applicative.Fraxl.Free
   build-depends:       base >= 4.7 && < 5
                      , async
                      , exceptions

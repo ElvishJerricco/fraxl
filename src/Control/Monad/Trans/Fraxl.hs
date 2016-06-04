@@ -37,7 +37,7 @@ module Control.Monad.Trans.Fraxl
   , mkUnion
   ) where
 
-import           Control.Applicative.Free.Fast
+import           Control.Applicative.Fraxl.Free
 import           Control.Arrow
 import           Control.Concurrent
 import           Control.Concurrent.Async
