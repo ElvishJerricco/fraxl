@@ -19,6 +19,8 @@ module Control.Monad.Trans.Fraxl
   , simpleAsyncFetch
   , fetchNil
   , (|:|)
+  , hoistFetch
+  , transFetch
   -- * The Sequence of Effects
   , ASeq(..)
   , reduceASeq
@@ -87,6 +89,14 @@ fetchNil _ = error "Not possible - empty union"
 
 infixr 5 |:|
 
+-- | Hoist a 'Fetch' function into a different result monad.
+hoistFetch :: Functor m => (forall x. m x -> n x) -> Fetch f m a -> Fetch f n a
+hoistFetch u f = u . fmap (hoistASeq u) . f
+
+-- | Translate a 'Fetch' function from @f@ requests, to @g@ requests.
+transFetch :: (forall x. g x -> f x) -> Fetch f m a -> Fetch g m a
+transFetch u f list = f (hoistASeq u list)
+
 -- | Runs a Fraxl computation, using a given 'Fetch' function for @f@.
 -- This takes 'FreerT' as a parameter rather than 'Fraxl',
 -- because 'Fraxl' is meant for a union of effects,
@@ -96,7 +106,7 @@ runFraxl fetch = iterT $ \a -> unAp a
   (\f s -> join (reduceASeq <$> fetch s) >>= f) (const id) ANil
 
 -- | A simple method of turning an 'IO' bound computation
--- into a 'DataSource' 'Fetch'.
+-- into a concurrent 'Fetch'.
 simpleAsyncFetch :: MonadIO m
                     => (forall x. f x -> IO x)
                     -> Fetch f m a
@@ -149,10 +159,8 @@ runCachedFraxl :: forall m f a.
                   -> DMap f MVar
                   -> m (a, DMap f MVar)
 runCachedFraxl fetch a cache = let
-  statefulA :: FreerT f (StateT (DMap f MVar) m) a
-  statefulA = hoistFreeT lift a
   cachedA :: FreerT (CachedFetch f) (StateT (DMap f MVar) m) a
-  cachedA = transFreeT (hoistAp CachedFetch) statefulA
+  cachedA = transFreeT (hoistAp CachedFetch) (hoistFreeT lift a)
   in runStateT (runFraxl (fetchCached fetch) cachedA) cache
 
 -- | Like 'runCachedFraxl', except it starts with an empty cache
