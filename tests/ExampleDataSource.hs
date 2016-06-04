@@ -44,12 +44,8 @@ data ExampleReq a where
 deriving instance Show (ExampleReq a)
 
 instance GEq ExampleReq where
-  CountAardvarks a `geq` CountAardvarks b = if a == b
-    then Just Refl
-    else Nothing
-  ListWombats a `geq` ListWombats b = if a == b
-    then Just Refl
-    else Nothing
+  CountAardvarks _ `geq` CountAardvarks _ = Just Refl
+  ListWombats _ `geq` ListWombats _ = Just Refl
   _ `geq` _ = Nothing
 
 instance GCompare ExampleReq where
