@@ -14,8 +14,7 @@ import           Control.Monad.State
 
 main :: IO ()
 main = do
-  let fraxl :: Fraxl '[MySource, MySource2] (StateT Int IO) [String]
-      fraxl = (++) <$> myFraxl <*> myFraxl
+  let fraxl = (++) <$> myFraxl <*> myFraxl
   (strs, reqs) <- runStateT (evalCachedFraxl (fetchMySource |:| fetchMySource2 |:| fetchNil) fraxl) 0
   putStrLn ("Number of MySource2 requests made: " ++ show reqs)
   print $ length strs
