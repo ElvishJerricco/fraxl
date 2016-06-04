@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+-- Not actually undecidable.
+-- @MonadFraxl f (Fraxl r m)@ just doesn't include the unnecessary @i@.
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Control.Monad.Fraxl.Class
  (
@@ -23,15 +26,17 @@ import qualified Control.Monad.Trans.State.Lazy    as Lazy
 import qualified Control.Monad.Trans.State.Strict  as Strict
 import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Strict
-import           Data.Dependent.OpenUnion
+import           Data.Vinyl.Optic.Plain.Class
+import qualified Data.Vinyl.Prelude.CoRec          as CR
+import           Data.Vinyl.Types
 
 -- | Class for Fraxl-capable monads.
 class Monad m => MonadFraxl f m where
   -- | 'dataFetch' is used to make a request of type 'f'.
   dataFetch :: f a -> m a
 
-instance (Monad m, Member f r) => MonadFraxl f (Fraxl r m) where
-  dataFetch = liftF . liftAp . inj
+instance (Monad m, RElem f r i) => MonadFraxl f (Fraxl r m) where
+  dataFetch = liftF . liftAp . Union . FunctorCoRec . CR.lift . Flap
 
 instance Monad m => MonadFraxl f (FreerT f m) where
   dataFetch = liftF . liftAp
