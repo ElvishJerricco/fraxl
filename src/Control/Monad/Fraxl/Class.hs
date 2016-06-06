@@ -1,8 +1,10 @@
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeOperators         #-}
 -- Not actually undecidable.
--- @MonadFraxl f (Fraxl r m)@ just doesn't include the unnecessary @i@.
+-- @MonadFraxl f (Fraxl r m)@ is not undecidable,
+-- but @f ∈ r@ doesn't satisfy the functional dependency @Fraxl r m -> f@.
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Control.Monad.Fraxl.Class
@@ -38,7 +40,7 @@ class Monad m => MonadFraxl f m where
   default dataFetch :: (MonadTrans t, MonadFraxl f m) => f a -> t m a
   dataFetch = lift . dataFetch
 
-instance (Monad m, RElem f r i) => MonadFraxl f (Fraxl r m) where
+instance (Monad m, f ∈ r) => MonadFraxl f (Fraxl r m) where
   dataFetch = liftF . liftAp . Union . FunctorCoRec . CR.lift . Flap
 
 instance Monad m => MonadFraxl f (FreerT f m) where
