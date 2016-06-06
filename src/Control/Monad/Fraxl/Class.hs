@@ -1,3 +1,4 @@
+{-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 -- Not actually undecidable.
@@ -34,6 +35,8 @@ import           Data.Vinyl.Types
 class Monad m => MonadFraxl f m where
   -- | 'dataFetch' is used to make a request of type 'f'.
   dataFetch :: f a -> m a
+  default dataFetch :: (MonadTrans t, MonadFraxl f m) => f a -> t m a
+  dataFetch = lift . dataFetch
 
 instance (Monad m, RElem f r i) => MonadFraxl f (Fraxl r m) where
   dataFetch = liftF . liftAp . Union . FunctorCoRec . CR.lift . Flap
@@ -42,37 +45,14 @@ instance Monad m => MonadFraxl f (FreerT f m) where
   dataFetch = liftF . liftAp
 
 instance MonadFraxl f m => MonadFraxl f (ContT r m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (ExceptT e m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (IdentityT m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (ListT m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (MaybeT m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (ReaderT e m) where
-  dataFetch = lift . dataFetch
-
 instance (MonadFraxl f m, Monoid w) => MonadFraxl f (Lazy.RWST r w s m) where
-  dataFetch = lift . dataFetch
-
 instance (MonadFraxl f m, Monoid w) => MonadFraxl f (Strict.RWST r w s m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (Lazy.StateT s m) where
-  dataFetch = lift . dataFetch
-
 instance MonadFraxl f m => MonadFraxl f (Strict.StateT s m) where
-  dataFetch = lift . dataFetch
-
 instance (MonadFraxl f m, Monoid w) => MonadFraxl f (Lazy.WriterT w m) where
-  dataFetch = lift . dataFetch
-
 instance (MonadFraxl f m, Monoid w) => MonadFraxl f (Strict.WriterT w m) where
-  dataFetch = lift . dataFetch
