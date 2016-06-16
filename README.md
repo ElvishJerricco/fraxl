@@ -76,14 +76,16 @@ it is the perfect candidate for this layer.
 It allows Fraxl to see all the requests made in
 an applicative computation at once, which is how Fraxl can parallelize them.
 
-**NOTE:** *This free applicative is not in the latest version of `free` yet.
-So `free` is used as a git submodule to gain access to it.*
-
 The final layer is the data source layer.
-It is user-specified, but will often be a dependent open union.
-The dependent open union is essentially a nested either type
-over any number of types.
-If all of those types are data sources, the dependent open union allows
+It is user-specified, but will often be a `Union :: [* -> *] -> * -> *`.
+The union is essentially a nested either type
+over any number of type constructors.
+
+```
+Union '[f, g, h] a ≡ Either (f a) (Either (g a) (h a))
+```
+
+If all of those types are data sources, the union allows
 Fraxl to handle all of them as one data source, in one layer of Fraxl.
 The nice thing about this is that it makes it type safe to use a data source.
 Whereas Haxl will simply trust that you know what you're doing,
