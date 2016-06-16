@@ -10,7 +10,7 @@ maintainer:          willfancher38@gmail.com
 copyright:           2016 Will Fancher
 category:            Concurrency
 build-type:          Simple
--- extra-source-files:
+extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
@@ -33,7 +33,8 @@ library
   ghc-options:         -Wall
   default-language:    Haskell2010
 
-executable examples
+test-suite examples
+  type:                exitcode-stdio-1.0
   main-is:             Main.hs
   build-depends:       base
                      , fraxl
@@ -43,7 +44,8 @@ executable examples
   ghc-options:         -Wall
   default-language:    Haskell2010
 
-executable monadbench
+test-suite monadbench
+  type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             MonadBench.hs
   other-modules:       ExampleDataSource
