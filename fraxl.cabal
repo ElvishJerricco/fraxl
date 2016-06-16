@@ -1,7 +1,7 @@
 name:                fraxl
 version:             0.1.0.0
 synopsis:            Cached and parallel data fetching.
-description:         See Haxl for something similar.
+description:         Fraxl is a free monad designed to make concurrent data fetching easy.
 homepage:            https://github.com/ElvishJerricco/fraxl
 license:             BSD3
 license-file:        LICENSE
