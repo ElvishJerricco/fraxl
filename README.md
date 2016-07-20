@@ -1,7 +1,7 @@
 Fraxl
 ---
 
-[Hackage](https://hackage.haskell.org/package/fraxl)
+[Hackage](https://hackage.haskell.org/package/fraxl) • [Presentation](https://youtu.be/Fe3-N9mKuPA)
 
 Fraxl is a library based on Facebook's [Haxl](https://github.com/facebook/Haxl).
 The goal is to decompose Haxl into more general parts,
