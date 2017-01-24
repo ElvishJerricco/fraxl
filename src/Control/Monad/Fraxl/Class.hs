@@ -1,6 +1,7 @@
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 -- Not actually undecidable.
 -- @MonadFraxl f (Fraxl r m)@ is not undecidable,
@@ -37,7 +38,7 @@ import           Data.Vinyl.Types
 class Monad m => MonadFraxl f m where
   -- | 'dataFetch' is used to make a request of type 'f'.
   dataFetch :: f a -> m a
-  default dataFetch :: (MonadTrans t, MonadFraxl f m) => f a -> t m a
+  default dataFetch :: (MonadTrans t, MonadFraxl f n, t n ~ m) => f a -> m a
   dataFetch = lift . dataFetch
 
 instance (Monad m, f ∈ r) => MonadFraxl f (Fraxl r m) where
