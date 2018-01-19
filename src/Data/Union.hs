@@ -17,11 +17,11 @@ data instance Union (f : fs) a = UnionLeft (f a)
 class In1 (f :: k -> *) (fs :: k -> *) where
   accessor :: Prism' (fs a) (f a)
 
-instance In1 f (Union (f : fs)) where
+instance {-# OVERLAPPING #-} In1 f (Union (f : fs)) where
   accessor = prism' UnionLeft (\ case UnionLeft a -> Just a
                                       UnionRight _ -> Nothing)
 
-instance In1 f (Union fs) => In1 f (Union (g : fs)) where
+instance {-# OVERLAPPABLE #-} In1 f (Union fs) => In1 f (Union (g : fs)) where
   accessor = prism' (\ x -> UnionRight $ x ^. re accessor)
                     (\ case UnionLeft _ -> Nothing
                             UnionRight a -> a ^? accessor)

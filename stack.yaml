@@ -2,6 +2,5 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-extra-deps:
-- text-1.2.2.1
 resolver: nightly-2017-12-01
+allow-newer: true
