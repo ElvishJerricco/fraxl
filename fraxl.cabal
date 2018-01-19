@@ -20,16 +20,55 @@ library
                      , Control.Monad.Trans.Fraxl
                      , Control.Monad.Trans.Fraxl.Free
                      , Control.Applicative.Fraxl.Free
+                     , Data.Union
   build-depends:       base >= 4.8 && < 5
                      , async
                      , exceptions
                      , free
-                     , transformers
+                     , lens
                      , mtl
+                     , transformers
                      , dependent-sum
                      , dependent-map
-                     , vinyl-plus
                      , type-aligned
+  default-extensions: ApplicativeDo
+                    , BangPatterns
+                    , ConstraintKinds
+                    , DataKinds
+                    , DeriveFoldable
+                    , DeriveFunctor
+                    , DeriveGeneric
+                    , DeriveTraversable
+                    , DuplicateRecordFields
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , FunctionalDependencies
+                    , GADTs
+                    , InstanceSigs
+                    , LambdaCase
+                    , MonadComprehensions
+                    , MultiParamTypeClasses
+                    , MultiWayIf
+                    , NamedFieldPuns
+                    , NamedWildCards
+                    , NoMonomorphismRestriction
+                    , OverloadedLabels
+                    , ParallelListComp
+                    , PartialTypeSignatures
+                    , PatternSynonyms
+                    , PolyKinds
+                    , RankNTypes
+                    , RecordWildCards
+                    , ScopedTypeVariables
+                    , StandaloneDeriving
+                    , TemplateHaskell
+                    , TupleSections
+                    , TypeApplications
+                    , TypeFamilies
+                    , TypeOperators
+                    , UndecidableInstances
+                    , UnicodeSyntax
+                    , ViewPatterns
   ghc-options:         -Wall
   default-language:    Haskell2010
 

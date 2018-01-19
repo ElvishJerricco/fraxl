@@ -15,6 +15,7 @@ module Control.Monad.Fraxl.Class
  ) where
 
 import           Control.Applicative.Fraxl.Free
+import           Control.Lens
 import           Control.Monad.Free.Class
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Cont
@@ -30,9 +31,8 @@ import qualified Control.Monad.Trans.State.Lazy    as Lazy
 import qualified Control.Monad.Trans.State.Strict  as Strict
 import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
 import qualified Control.Monad.Trans.Writer.Strict as Strict
-import           Data.Vinyl.Optic.Plain.Class
-import qualified Data.Vinyl.Prelude.CoRec          as CR
-import           Data.Vinyl.Types
+
+import           Data.Union
 
 -- | Class for Fraxl-capable monads.
 class Monad m => MonadFraxl f m where
@@ -41,8 +41,8 @@ class Monad m => MonadFraxl f m where
   default dataFetch :: (MonadTrans t, MonadFraxl f n, t n ~ m) => f a -> m a
   dataFetch = lift . dataFetch
 
-instance (Monad m, f ∈ r) => MonadFraxl f (Fraxl r m) where
-  dataFetch = liftF . liftAp . Union . FunctorCoRec . CR.lift . Flap
+instance (Monad m, f ∈ Union r) => MonadFraxl f (Fraxl r m) where
+  dataFetch = liftF . liftAp . (^. re accessor)
 
 instance Monad m => MonadFraxl f (FreerT f m) where
   dataFetch = liftF . liftAp
