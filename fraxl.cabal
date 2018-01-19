@@ -40,6 +40,7 @@ library
                     , DeriveGeneric
                     , DeriveTraversable
                     , DuplicateRecordFields
+                    , EmptyCase
                     , FlexibleContexts
                     , FlexibleInstances
                     , FunctionalDependencies
@@ -69,7 +70,7 @@ library
                     , UndecidableInstances
                     , UnicodeSyntax
                     , ViewPatterns
-  ghc-options:         -Wall
+  ghc-options:         -Wall -Wno-name-shadowing -Wno-type-defaults
   default-language:    Haskell2010
 
 test-suite examples
