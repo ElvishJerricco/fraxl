@@ -20,17 +20,57 @@ library
                      , Control.Monad.Trans.Fraxl
                      , Control.Monad.Trans.Fraxl.Free
                      , Control.Applicative.Fraxl.Free
+                     , Data.Union
   build-depends:       base >= 4.8 && < 5
                      , async
                      , exceptions
                      , free
-                     , transformers
+                     , lens
                      , mtl
+                     , transformers
                      , dependent-sum
                      , dependent-map
-                     , vinyl-plus
                      , type-aligned
-  ghc-options:         -Wall
+  default-extensions: ApplicativeDo
+                    , BangPatterns
+                    , ConstraintKinds
+                    , DataKinds
+                    , DeriveFoldable
+                    , DeriveFunctor
+                    , DeriveGeneric
+                    , DeriveTraversable
+                    , DuplicateRecordFields
+                    , EmptyCase
+                    , FlexibleContexts
+                    , FlexibleInstances
+                    , FunctionalDependencies
+                    , GADTs
+                    , InstanceSigs
+                    , LambdaCase
+                    , MonadComprehensions
+                    , MultiParamTypeClasses
+                    , MultiWayIf
+                    , NamedFieldPuns
+                    , NamedWildCards
+                    , NoMonomorphismRestriction
+                    , OverloadedLabels
+                    , ParallelListComp
+                    , PartialTypeSignatures
+                    , PatternSynonyms
+                    , PolyKinds
+                    , RankNTypes
+                    , RecordWildCards
+                    , ScopedTypeVariables
+                    , StandaloneDeriving
+                    , TemplateHaskell
+                    , TupleSections
+                    , TypeApplications
+                    , TypeFamilies
+                    , TypeOperators
+                    , UndecidableInstances
+                    , UnicodeSyntax
+                    , ViewPatterns
+  ghc-options:         -Wall -Wno-name-shadowing -Wno-type-defaults
   default-language:    Haskell2010
 
 test-suite examples
@@ -44,7 +84,7 @@ test-suite examples
   ghc-options:         -Wall
   default-language:    Haskell2010
 
-test-suite monadbench
+benchmark monadbench
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             MonadBench.hs

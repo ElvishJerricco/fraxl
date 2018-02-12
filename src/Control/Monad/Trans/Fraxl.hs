@@ -1,12 +1,3 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
-{-# LANGUAGE TypeOperators         #-}
-
 module Control.Monad.Trans.Fraxl
   (
   -- * The Fraxl Monad
@@ -33,8 +24,6 @@ module Control.Monad.Trans.Fraxl
   , module Data.GADT.Compare
   -- * Union
   , Union(..)
-  , getCoRec
-  , mkUnion
   ) where
 
 import           Control.Applicative.Fraxl.Free
@@ -48,8 +37,7 @@ import           Control.Monad.Trans.Fraxl.Free
 import           Data.Dependent.Map             (DMap)
 import qualified Data.Dependent.Map             as DMap
 import           Data.GADT.Compare
-import qualified Data.Vinyl.Prelude.CoRec       as CR
-import           Data.Vinyl.Types
+import           Data.Union
 
 -- | Fraxl is based on a particular Freer monad.
 -- This Freer monad has applicative optimization,
@@ -82,13 +70,13 @@ fetchNil _ = error "Not possible - empty union"
            -> ASeq (Union (f ': r)) z
            -> m (ASeq m x, ASeq m y, ASeq m z)
   runUnion flist ulist ANil = (, , ANil) <$> fetch flist <*> fetchU ulist
-  runUnion flist ulist (ACons u us) = case CR.uncons (getCoRec u) of
-    Left (Flap fa) -> fmap
+  runUnion flist ulist (ACons u us) = case u of
+    UnionLeft fa -> fmap
       (\(ACons ma ms, other, rest) -> (ms, other, ACons ma rest))
       (runUnion (ACons fa flist) ulist us)
-    Right u' -> fmap
+    UnionRight u' -> fmap
       (\(other, ACons ma ms, rest) -> (other, ms, ACons ma rest))
-      (runUnion flist (ACons (mkUnion u') ulist) us)
+      (runUnion flist (ACons u' ulist) us)
 
 infixr 5 |:|
 
@@ -173,34 +161,3 @@ evalCachedFraxl :: forall m f a.
                    , GCompare f)
                    => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 evalCachedFraxl fetch a = fst <$> runCachedFraxl fetch a DMap.empty
-
--- | 'FunctorCoRec' doesn't implement 'GCompare'.
--- To avoid orphan instances, a newtype is defined.
---
--- @Union@ represents a value of any type constructor in @r@ applied with @a@.
-newtype Union r a = Union (FunctorCoRec r a)
-
-getCoRec :: Union r a -> CoRec (Flap a) r
-getCoRec (Union (FunctorCoRec u)) = u
-
-mkUnion :: CoRec (Flap a) r -> Union r a
-mkUnion u = Union $ FunctorCoRec u
-
-instance GEq (Union '[]) where
-  _ `geq` _ = error "Not possible - empty union"
-
-instance (GEq f, GEq (Union r)) => GEq (Union (f ': r)) where
-  a `geq` b = case (CR.uncons (getCoRec a), CR.uncons (getCoRec b)) of
-    (Left (Flap fa), Left (Flap fb)) -> fa `geq` fb
-    (Right a', Right b') -> mkUnion a' `geq` mkUnion b'
-    _ -> Nothing
-
-instance GCompare (Union '[]) where
-  _ `gcompare` _ = error "Not possible - empty union"
-
-instance (GCompare f, GCompare (Union r)) => GCompare (Union (f ': r)) where
-  a `gcompare` b = case (CR.uncons (getCoRec a), CR.uncons (getCoRec b)) of
-    (Left (Flap fa), Left (Flap fb)) -> fa `gcompare` fb
-    (Right a', Right b')             -> mkUnion a' `gcompare` mkUnion b'
-    (Left _, Right _)                -> GLT
-    (Right _, Left _)                -> GGT
