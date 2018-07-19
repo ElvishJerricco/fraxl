@@ -27,7 +27,8 @@ module Control.Monad.Trans.Fraxl.Free
   , iterM
   -- * Free Monads With Class
   , MonadFree(..)
-  ) where
+  )
+where
 
 import           Control.Applicative
 import           Control.Arrow
@@ -67,20 +68,19 @@ import           Data.TASequence.FastCatQueue
 --   Impure x k' >>= k = Impure x (k' >=> k)
 --------------------------------------------------------------------------------
 
-(>.<) :: (Applicative m, TASequence s)
-      => (m b -> m c)
-      -> s (Kleisli m) a b
-      -> s (Kleisli m) a c
+(>.<)
+  :: (Applicative m, TASequence s)
+  => (m b -> m c)
+  -> s (Kleisli m) a b
+  -> s (Kleisli m) a c
 (>.<) f arrs = case tviewr arrs of
-  TAEmptyR -> tsingleton $ Kleisli (f . pure)
+  TAEmptyR         -> tsingleton $ Kleisli (f . pure)
   ks :> Kleisli ar -> ks |> Kleisli (f . ar)
 
-qApp :: (Monad m, TASequence s)
-     => s (Kleisli m) a b
-     -> Kleisli m a b
+qApp :: (Monad m, TASequence s) => s (Kleisli m) a b -> Kleisli m a b
 qApp arrs = case tviewl arrs of
   TAEmptyL -> Kleisli pure
-  k :< ks -> k >>> qApp ks
+  k :< ks  -> k >>> qApp ks
 
 -- | The base functor for a free monad.
 data FreeF f m a where
@@ -91,13 +91,14 @@ instance (Applicative f, Monad m) => Functor (FreeF f m) where
   fmap f (Free b k) = Free b (fmap f >.< k)
   {-# INLINE fmap #-}
 
-transFreeF :: (Applicative f, Monad m)
-           => (forall x. f x -> g x)
-           -> FreeF f m a
-           -> FreeF g m a
-transFreeF _ (Pure a) = Pure a
-transFreeF t (Free b k) = Free (t b) k' where
-  k' = tmap (Kleisli . (transFreeT t .) . runKleisli) k
+transFreeF
+  :: (Applicative f, Monad m)
+  => (forall x . f x -> g x)
+  -> FreeF f m a
+  -> FreeF g m a
+transFreeF _ (Pure a  ) = Pure a
+transFreeF t (Free b k) = Free (t b) k'
+  where k' = tmap (Kleisli . (transFreeT t .) . runKleisli) k
 {-# INLINE transFreeF #-}
 
 -- | The \"free monad transformer\" for an applicative functor @f@
@@ -208,58 +209,62 @@ instance (Applicative f, MonadCatch m) => MonadCatch (FreeT f m) where
 -- | Tear down a free monad transformer using iteration.
 iterT :: (Applicative f, Monad m) => (f (m a) -> m a) -> FreeT f m a -> m a
 iterT f (FreeT m) = do
-    val <- m
-    case val of
-        Pure x -> return x
-        Free y k -> f $ fmap (iterT f . runKleisli (qApp k)) y
+  val <- m
+  case val of
+    Pure x   -> return x
+    Free y k -> f $ fmap (iterT f . runKleisli (qApp k)) y
 
 -- | Tear down a free monad transformer using iteration over a transformer.
-iterTM :: ( Applicative f
-          , Monad m
-          , MonadTrans t
-          , Monad (t m))
-          => (f (t m a) -> t m a) -> FreeT f m a -> t m a
+iterTM
+  :: (Applicative f, Monad m, MonadTrans t, Monad (t m))
+  => (f (t m a) -> t m a)
+  -> FreeT f m a
+  -> t m a
 iterTM f (FreeT m) = do
-    val <- lift m
-    case val of
-        Pure x -> return x
-        Free y k -> f $ fmap (iterTM f . runKleisli (qApp k)) y
+  val <- lift m
+  case val of
+    Pure x   -> return x
+    Free y k -> f $ fmap (iterTM f . runKleisli (qApp k)) y
 
 -- | Lift a monad homomorphism from @m@ to @n@ into a monad homomorphism from @'FreeT' f m@ to @'FreeT' f n@
 --
 -- @'hoistFreeT' :: ('Monad' m, 'Functor' f) => (m ~> n) -> 'FreeT' f m ~> 'FreeT' f n@
-hoistFreeT :: (Monad m, Applicative f)
-           => (forall a. m a -> n a)
-           -> FreeT f m b
-           -> FreeT f n b
-hoistFreeT mh = FreeT . mh . fmap f . runFreeT where
-  f (Pure a) = Pure a
+hoistFreeT
+  :: (Monad m, Applicative f)
+  => (forall a . m a -> n a)
+  -> FreeT f m b
+  -> FreeT f n b
+hoistFreeT mh = FreeT . mh . fmap f . runFreeT
+ where
+  f (Pure a  ) = Pure a
   f (Free b k) = Free b $ tmap (Kleisli . (hoistFreeT mh .) . runKleisli) k
 
 -- | Lift a natural transformation from @f@ to @g@ into a monad homomorphism from @'FreeT' f m@ to @'FreeT' g m@
-transFreeT :: (Applicative f, Monad m)
-           => (forall a. f a -> g a)
-           -> FreeT f m b
-           -> FreeT g m b
+transFreeT
+  :: (Applicative f, Monad m)
+  => (forall a . f a -> g a)
+  -> FreeT f m b
+  -> FreeT g m b
 transFreeT nt = FreeT . fmap (transFreeF nt) . runFreeT
 
 -- | Pull out and join @m@ layers of @'FreeT' f m a@.
-joinFreeT :: forall m f a. ( Monad m
-                           , Traversable f
-                           , Applicative f)
-                           => FreeT f m a -> m (Free f a)
+joinFreeT
+  :: forall m f a
+   . (Monad m, Traversable f, Applicative f)
+  => FreeT f m a
+  -> m (Free f a)
 joinFreeT (FreeT m) = m >>= joinFreeF
-  where
-    joinFreeF :: FreeF f m a -> m (Free f a)
-    joinFreeF (Pure x) = return (return x)
-    joinFreeF (Free y ks) = wrap <$> mapM (joinFreeT . runKleisli (qApp ks)) y
+ where
+  joinFreeF :: FreeF f m a -> m (Free f a)
+  joinFreeF (Pure x   ) = return (return x)
+  joinFreeF (Free y ks) = wrap <$> mapM (joinFreeT . runKleisli (qApp ks)) y
 
 -- | Tear down a free monad transformer using Monad instance for @t m@.
 retractT :: (MonadTrans t, Monad (t m), Monad m) => FreeT (t m) m a -> t m a
 retractT (FreeT m) = do
   val <- lift m
   case val of
-    Pure x -> return x
+    Pure x   -> return x
     Free y k -> y >>= retractT . runKleisli (qApp k)
 
 -- | The \"free monad\" for an applicative functor @f@.
@@ -272,10 +277,9 @@ type Free f = FreeT f Identity
 -- 'retract' . 'liftF' = 'id'
 -- @
 retract :: Monad f => Free f a -> f a
-retract m =
-  case runIdentity (runFreeT m) of
-    Pure a  -> return a
-    Free x ks -> x >>= retract . runKleisli (qApp ks)
+retract m = case runIdentity (runFreeT m) of
+  Pure a    -> return a
+  Free x ks -> x >>= retract . runKleisli (qApp ks)
 
 -- | Tear down a 'Free' 'Monad' using iteration.
 iter :: Applicative f => (f a -> a) -> Free f a -> a

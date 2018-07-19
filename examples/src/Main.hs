@@ -15,7 +15,9 @@ import           Control.Monad.State
 main :: IO ()
 main = do
   let fraxl = (++) <$> myFraxl <*> myFraxl
-  (strs, reqs) <- runStateT (evalCachedFraxl (fetchMySource |:| fetchMySource2 |:| fetchNil) fraxl) 0
+  (strs, reqs) <- runStateT
+    (evalCachedFraxl (fetchMySource |:| fetchMySource2 |:| fetchNil) fraxl)
+    0
   putStrLn ("Number of MySource2 requests made: " ++ show reqs)
   print $ length strs
   print strs
@@ -39,7 +41,8 @@ instance GCompare MySource where
   MyInt `gcompare` MyInt = GEQ
 
 fetchMySource :: MonadIO m => Fetch MySource m a
-fetchMySource = simpleAsyncFetch simpleFetch where
+fetchMySource = simpleAsyncFetch simpleFetch
+ where
   simpleFetch :: MySource a -> IO a
   simpleFetch MyString = do
     putStrLn "Sleeping String!"
@@ -72,9 +75,10 @@ instance GCompare MySource2 where
   MyInt2 `gcompare` MyInt2 = GEQ
 
 fetchMySource2 :: (MonadIO m, MonadState Int m) => Fetch MySource2 m a
-fetchMySource2 a = modify (+ clength a) >> simpleAsyncFetch simpleFetch a where
+fetchMySource2 a = modify (+ clength a) >> simpleAsyncFetch simpleFetch a
+ where
   clength :: ASeq f r -> Int
-  clength ANil = 0
+  clength ANil         = 0
   clength (ACons _ rs) = 1 + clength rs
   simpleFetch :: MySource2 a -> IO a
   simpleFetch MyString2 = do

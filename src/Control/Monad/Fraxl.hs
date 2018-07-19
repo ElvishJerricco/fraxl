@@ -22,7 +22,8 @@ module Control.Monad.Fraxl
   , module Data.GADT.Compare
   -- * Fraxl Monads
   , MonadFraxl(..)
-  ) where
+  )
+where
 
 import           Control.Monad.Fraxl.Class
 import           Control.Monad.Trans.Fraxl

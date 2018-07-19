@@ -5,13 +5,16 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE StandaloneDeriving         #-}
 
-module ExampleDataSource (
+module ExampleDataSource
+  (
     -- * requests for this data source
-    Id(..), ExampleReq(..)
+    Id(..)
+  , ExampleReq(..)
   , fetchExample
   , countAardvarks
   , listWombats
-  ) where
+  )
+where
 
 import           Control.Monad.Fraxl
 
@@ -64,8 +67,10 @@ instance GCompare ExampleReq where
 
 fetchExample :: Monad m => Fetch ExampleReq m a
 fetchExample ANil = return ANil
-fetchExample (ACons (CountAardvarks str) rs) = ACons <$> return (return (length (filter (== 'a') str))) <*> fetchExample rs
-fetchExample (ACons (ListWombats a) rs) = ACons <$> return (return (take (fromIntegral a) [1..])) <*> fetchExample rs
+fetchExample (ACons (CountAardvarks str) rs) =
+  ACons <$> return (return (length (filter (== 'a') str))) <*> fetchExample rs
+fetchExample (ACons (ListWombats a) rs) =
+  ACons <$> return (return (take (fromIntegral a) [1 ..])) <*> fetchExample rs
 
 countAardvarks :: MonadFraxl ExampleReq m => String -> m Int
 countAardvarks str = dataFetch (CountAardvarks str)

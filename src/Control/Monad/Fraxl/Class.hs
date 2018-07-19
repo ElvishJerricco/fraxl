@@ -9,10 +9,11 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Control.Monad.Fraxl.Class
- (
+  (
  -- * Fraxl Monads
-   MonadFraxl(..)
- ) where
+    MonadFraxl(..)
+  )
+where
 
 import           Control.Applicative.Fraxl.Free
 import           Control.Monad.Free.Class
@@ -23,12 +24,17 @@ import           Control.Monad.Trans.Fraxl
 import           Control.Monad.Trans.Identity
 import           Control.Monad.Trans.Maybe
 import           Control.Monad.Trans.Reader
-import qualified Control.Monad.Trans.RWS.Lazy      as Lazy
-import qualified Control.Monad.Trans.RWS.Strict    as Strict
-import qualified Control.Monad.Trans.State.Lazy    as Lazy
-import qualified Control.Monad.Trans.State.Strict  as Strict
-import qualified Control.Monad.Trans.Writer.Lazy   as Lazy
-import qualified Control.Monad.Trans.Writer.Strict as Strict
+import qualified Control.Monad.Trans.RWS.Lazy  as Lazy
+import qualified Control.Monad.Trans.RWS.Strict
+                                               as Strict
+import qualified Control.Monad.Trans.State.Lazy
+                                               as Lazy
+import qualified Control.Monad.Trans.State.Strict
+                                               as Strict
+import qualified Control.Monad.Trans.Writer.Lazy
+                                               as Lazy
+import qualified Control.Monad.Trans.Writer.Strict
+                                               as Strict
 import           Data.Vinyl
 import           Data.Vinyl.CoRec
 

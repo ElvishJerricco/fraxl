@@ -19,7 +19,8 @@ module Control.Applicative.Fraxl.Free
   , traverseASeq
   , rebaseASeq
   , hoistAp
-  ) where
+  )
+where
 
 import           Control.Applicative
 import           Data.Typeable
@@ -35,23 +36,29 @@ reduceASeq ANil         = pure ()
 reduceASeq (ACons x xs) = (,) <$> x <*> reduceASeq xs
 
 -- | Transform a sequence of 'f' into a sequence of 'g'.
-hoistASeq :: (forall x. f x -> g x) -> ASeq f a -> ASeq g a
-hoistASeq _ ANil = ANil
+hoistASeq :: (forall x . f x -> g x) -> ASeq f a -> ASeq g a
+hoistASeq _ ANil         = ANil
 hoistASeq u (ACons x xs) = ACons (u x) (u `hoistASeq` xs)
 
 -- | Traverse a sequence with resepect to its interpretation type 'f'.
-traverseASeq :: Applicative h => (forall x. f x -> h (g x)) -> ASeq f a -> h (ASeq g a)
-traverseASeq _ ANil      = pure ANil
+traverseASeq
+  :: Applicative h => (forall x . f x -> h (g x)) -> ASeq f a -> h (ASeq g a)
+traverseASeq _ ANil         = pure ANil
 traverseASeq f (ACons x xs) = ACons <$> f x <*> traverseASeq f xs
 
 -- | It may not look like it, but this appends two sequences.
 -- See <https://www.eyrie.org/~zednenem/2013/05/27/freeapp Dave Menendez's work> for more explanation.
-rebaseASeq :: ASeq f u -> (forall x. (x -> y) -> ASeq f x -> z) ->
-  (v -> u -> y) -> ASeq f v -> z
+rebaseASeq
+  :: ASeq f u
+  -> (forall x . (x -> y) -> ASeq f x -> z)
+  -> (v -> u -> y)
+  -> ASeq f v
+  -> z
 rebaseASeq ANil         k f = k (`f` ())
-rebaseASeq (ACons x xs) k f =
-  rebaseASeq xs (\g s -> k (\(a,u) -> g u a) (ACons x s))
-    (\v u a -> f v (a,u))
+rebaseASeq (ACons x xs) k f = rebaseASeq
+  xs
+  (\g s -> k (\(a, u) -> g u a) (ACons x s))
+  (\v u a -> f v (a, u))
 
 
 -- | The faster free 'Applicative'.
@@ -64,7 +71,7 @@ newtype Ap f a = Ap
 -- | Given a natural transformation from @f@ to @g@, this gives a canonical monoidal natural transformation from @'Ap' f@ to @g@.
 --
 -- prop> runAp t == retractApp . hoistApp t
-runAp :: Applicative g => (forall x. f x -> g x) -> Ap f a -> g a
+runAp :: Applicative g => (forall x . f x -> g x) -> Ap f a -> g a
 runAp u = retractAp . hoistAp u
 
 -- | Perform a monoidal analysis over free applicative value.
@@ -75,7 +82,7 @@ runAp u = retractAp . hoistAp u
 -- count :: Ap f a -> Int
 -- count = getSum . runAp_ (\\_ -> Sum 1)
 -- @
-runAp_ :: Monoid m => (forall a. f a -> m) -> Ap f b -> m
+runAp_ :: Monoid m => (forall a . f a -> m) -> Ap f b -> m
 runAp_ f = getConst . runAp (Const . f)
 
 instance Functor (Ap f) where
@@ -87,18 +94,18 @@ instance Applicative (Ap f) where
 
 -- | A version of 'lift' that can be used with just a 'Functor' for @f@.
 liftAp :: f a -> Ap f a
-liftAp a = Ap (\k f s -> k (\(a',s') -> f s' a') (ACons a s))
+liftAp a = Ap (\k f s -> k (\(a', s') -> f s' a') (ACons a s))
 {-# INLINE liftAp #-}
 
 -- | Given a natural transformation from @f@ to @g@ this gives a monoidal natural transformation from @Ap f@ to @Ap g@.
-hoistAp :: (forall x. f x -> g x) -> Ap f a -> Ap g a
-hoistAp g x = Ap (\k f s ->
-  unAp x
-    (\f' s' ->
-      rebaseASeq (hoistASeq g s') k
-        (\v u -> f v (f' u)) s)
+hoistAp :: (forall x . f x -> g x) -> Ap f a -> Ap g a
+hoistAp g x = Ap
+  (\k f s -> unAp
+    x
+    (\f' s' -> rebaseASeq (hoistASeq g s') k (\v u -> f v (f' u)) s)
     (const id)
-    ANil)
+    ANil
+  )
 
 -- | Interprets the free applicative functor over f using the semantics for
 --   `pure` and `<*>` given by the Applicative instance for f.
