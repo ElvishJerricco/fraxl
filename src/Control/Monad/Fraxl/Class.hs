@@ -15,7 +15,7 @@ module Control.Monad.Fraxl.Class
   )
 where
 
-import           Control.Applicative.Fraxl.Free
+import           Control.Applicative.Free.Fast
 import           Control.Monad.Free.Class
 import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Cont

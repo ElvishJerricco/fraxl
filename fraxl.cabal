@@ -25,7 +25,6 @@ library
         Control.Monad.Fraxl.Class
         Control.Monad.Trans.Fraxl
         Control.Monad.Trans.Fraxl.Free
-        Control.Applicative.Fraxl.Free
     hs-source-dirs: src
     default-language: Haskell2010
     ghc-options: -Wall

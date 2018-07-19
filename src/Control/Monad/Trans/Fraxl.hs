@@ -40,7 +40,7 @@ module Control.Monad.Trans.Fraxl
   , Flap(..)
   ) where
 
-import           Control.Applicative.Fraxl.Free
+import           Control.Applicative.Free.Fast
 import           Control.Arrow
 import           Control.Concurrent
 import           Control.Concurrent.Async
