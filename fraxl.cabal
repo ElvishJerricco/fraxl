@@ -19,6 +19,11 @@ source-repository head
     type: git
     location: https://github.com/ElvishJerricco/fraxl
 
+flag install-examples
+    description:
+        Build and install example programs.
+    default: False
+
 library
     exposed-modules:
         Control.Monad.Fraxl
@@ -40,19 +45,23 @@ library
         vinyl >=0.6 && <0.9,
         type-aligned >=0.9.6 && <0.10
 
-test-suite examples
-    type: exitcode-stdio-1.0
+executable examples
     main-is: Main.hs
     hs-source-dirs: examples/src
     default-language: Haskell2010
     ghc-options: -Wall
-    build-depends:
-        base -any,
-        fraxl -any,
-        transformers -any,
-        mtl -any
 
-test-suite monadbench
+    if flag(install-examples)
+        buildable: True
+        build-depends:
+            base -any,
+            fraxl -any,
+            transformers -any,
+            mtl -any
+    else
+        buildable: False
+
+benchmark monadbench
     type: exitcode-stdio-1.0
     main-is: MonadBench.hs
     hs-source-dirs: tests
