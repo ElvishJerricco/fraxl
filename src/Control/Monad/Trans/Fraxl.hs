@@ -1,12 +1,14 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE GADTs                 #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TupleSections         #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Control.Monad.Trans.Fraxl
   (
@@ -46,10 +48,14 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.State
 import           Control.Monad.Trans.Fraxl.Free
-import           Data.Dependent.Map             (DMap)
-import qualified Data.Dependent.Map             as DMap
+import           Data.Dependent.Map (DMap)
+import qualified Data.Dependent.Map as DMap
 import           Data.GADT.Compare
+import           Data.Maybe (fromJust)
+import           Data.Vinyl
 import           Data.Vinyl.CoRec
+import           Data.Vinyl.Functor (Compose(..), (:.))
+import           Data.Vinyl.TypeLevel
 
 -- | Fraxl is based on a particular Freer monad.
 -- This Freer monad has applicative optimization,
@@ -72,7 +78,7 @@ fetchNil ANil = pure ANil
 fetchNil _ = error "Not possible - empty union"
 
 -- | Like '(:)' for constructing @Fetch (Union (f ': r))@
-(|:|) :: forall f r a m. Monad m
+(|:|) :: forall f r a m. (Monad m, RecApplicative r, FoldRec r r)
        => (forall a'. Fetch f m a')
        -> (forall a'. Fetch (Union r) m a')
        -> Fetch (Union (f ': r)) m a
@@ -174,8 +180,34 @@ evalCachedFraxl :: forall m f a.
                    => (forall a'. Fetch f m a') -> FreerT f m a -> m a
 evalCachedFraxl fetch a = fst <$> runCachedFraxl fetch a DMap.empty
 
-unconsCoRec :: CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
-unconsCoRec = undefined
+class RIndex t ts ~ i => FMatch1 t ts i where
+  fmatch1' :: Handler r (f t) -> Rec (Maybe :. f) ts -> Either r (Rec (Maybe :. f) (RDelete t ts))
+
+instance FMatch1 t (t ': ts) 'Z where
+  fmatch1' _ (Compose Nothing :& xs) = Right xs
+  fmatch1' (H h) (Compose (Just x) :& _) = Left (h x)
+
+instance (FMatch1 t ts i, RIndex t (s ': ts) ~ 'S i,
+          RDelete t (s ': ts) ~ (s ': RDelete t ts))
+         => FMatch1 t (s ': ts) ('S i) where
+  fmatch1' h (x :& xs) = (x :&) <$> fmatch1' h xs
+
+-- | Handle a single variant of a 'CoRec': either the function is
+-- applied to the variant or the type of the 'CoRec' is refined to
+-- reflect the fact that the variant is /not/ compatible with the type
+-- of the would-be handler
+fmatch1 :: (FMatch1 t ts (RIndex t ts),
+            RecApplicative ts,
+            FoldRec (RDelete t ts) (RDelete t ts))
+        => Handler r (f t)
+        -> CoRec f ts
+        -> Either r (CoRec f (RDelete t ts))
+fmatch1 h = fmap (fromJust . firstField)
+          . fmatch1' h
+          . coRecToRec
+
+unconsCoRec :: (RecApplicative ts, FoldRec ts ts) => CoRec f (t ': ts) -> Either (f t) (CoRec f ts)
+unconsCoRec = fmatch1 (H id)
 
 newtype Flap a f = Flap (f a)
 
@@ -185,7 +217,7 @@ newtype Union r a = Union (CoRec (Flap a) r)
 instance GEq (Union '[]) where
   _ `geq` _ = error "Not possible - empty union"
 
-instance (GEq f, GEq (Union r)) => GEq (Union (f ': r)) where
+instance (RecApplicative r, FoldRec r r, GEq f, GEq (Union r)) => GEq (Union (f ': r)) where
   Union a `geq` Union b = case (unconsCoRec a, unconsCoRec b) of
     (Left (Flap fa), Left (Flap fb)) -> fa `geq` fb
     (Right a', Right b') -> Union a' `geq` Union b'
@@ -194,7 +226,7 @@ instance (GEq f, GEq (Union r)) => GEq (Union (f ': r)) where
 instance GCompare (Union '[]) where
   _ `gcompare` _ = error "Not possible - empty union"
 
-instance (GCompare f, GCompare (Union r)) => GCompare (Union (f ': r)) where
+instance (RecApplicative r, FoldRec r r, GCompare f, GCompare (Union r)) => GCompare (Union (f ': r)) where
   Union a `gcompare` Union b = case (unconsCoRec a, unconsCoRec b) of
     (Left (Flap fa), Left (Flap fb)) -> fa `gcompare` fb
     (Right a', Right b')             -> Union a' `gcompare` Union b'
