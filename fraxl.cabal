@@ -1,6 +1,6 @@
 cabal-version: >=1.10
 name: fraxl
-version: 0.2.0.0
+version: 0.2.0.1
 license: BSD3
 license-file: LICENSE
 copyright: 2016 Will Fancher
