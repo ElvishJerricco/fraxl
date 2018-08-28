@@ -35,8 +35,8 @@ import qualified Control.Monad.Trans.Writer.Lazy
                                                as Lazy
 import qualified Control.Monad.Trans.Writer.Strict
                                                as Strict
-import           Data.Vinyl
-import           Data.Vinyl.CoRec
+import qualified Data.Sum  as Sum
+import           GHC.TypeNats
 
 -- | Class for Fraxl-capable monads.
 class Monad m => MonadFraxl f m where
@@ -45,8 +45,8 @@ class Monad m => MonadFraxl f m where
   default dataFetch :: (MonadTrans t, MonadFraxl f n, t n ~ m) => f a -> m a
   dataFetch = lift . dataFetch
 
-instance (Monad m, f ∈ r) => MonadFraxl f (Fraxl r m) where
-  dataFetch = liftF . liftAp . Union . CoRec . Flap
+instance (Monad m, KnownNat (Sum.ElemIndex f r)) => MonadFraxl f (Fraxl r m) where
+  dataFetch = liftF . liftAp . Union . Sum.inject
 
 instance Monad m => MonadFraxl f (FreerT f m) where
   dataFetch = liftF . liftAp

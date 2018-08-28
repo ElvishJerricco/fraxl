@@ -42,8 +42,8 @@ library
         mtl >=2.2.2 && <2.3,
         dependent-sum ==0.4.*,
         dependent-map >=0.2.4.0 && <0.3,
-        vinyl >=0.6 && <0.9,
-        type-aligned >=0.9.6 && <0.10
+        type-aligned >=0.9.6 && <0.10,
+        fastsum >=0.1.0.0 && <0.2
 
 executable examples
     main-is: Main.hs
