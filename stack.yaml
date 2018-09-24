@@ -4,4 +4,5 @@ packages:
 - '.'
 extra-deps:
 - type-aligned-0.9.6
+- fastsum-0.1.0.0
 resolver: lts-12.0
