@@ -1,6 +1,6 @@
 cabal-version: >=1.10
 name: fraxl
-version: 0.2.0.1
+version: 0.3.0.0
 license: BSD3
 license-file: LICENSE
 copyright: 2016 Will Fancher
@@ -14,6 +14,7 @@ category: Concurrency
 build-type: Simple
 extra-source-files:
     README.md
+    CHANGELOG.md
 
 source-repository head
     type: git
@@ -52,7 +53,6 @@ executable examples
     ghc-options: -Wall
 
     if flag(install-examples)
-        buildable: True
         build-depends:
             base -any,
             fraxl -any,
