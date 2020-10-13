@@ -5,4 +5,7 @@ packages:
 extra-deps:
 - type-aligned-0.9.6
 - fastsum-0.1.0.0
+- dependent-sum-0.6.2.0
+- constraints-extras-0.3.0.2
+- dependent-map-0.3.1.0
 resolver: lts-12.0
