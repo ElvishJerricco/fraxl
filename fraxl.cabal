@@ -41,10 +41,10 @@ library
         free >=5.0.2 && <5.2,
         transformers >=0.4.2.0 && <0.6,
         mtl >=2.2.2 && <2.3,
-        dependent-sum ==0.4.*,
-        dependent-map >=0.2.4.0 && <0.3,
+        dependent-sum >=0.4.0.0 && <0.7,
+        dependent-map >=0.3.1.0 && <0.4,
         type-aligned >=0.9.6 && <0.10,
-        fastsum >=0.1.0.0 && <0.2
+        fastsum >=0.1.0.0 && <0.4
 
 executable examples
     main-is: Main.hs
